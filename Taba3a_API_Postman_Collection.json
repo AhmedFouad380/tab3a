@@ -1,0 +1,1056 @@
+{
+	"info": {
+		"_postman_id": "e4b2d35a-9b1c-4b6e-82d1-taba3a-api-v1",
+		"name": "🖨️ Taba3a API (تطبيق طباعة) - v1",
+		"description": "مجموعة طلبات Postman الشاملة لجميع واجهات برمجة التطبيقات (APIs) لتطبيق طباعة (الطباعة الذاتية عبر ماكينات Kiosk والطباعة المسبقة عبر الفروع).",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://127.0.0.1:8000/api/v1",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "1. 🔐 Authentication & Profile (التوثيق والحساب)",
+			"item": [
+				{
+					"name": "Send OTP (إرسال رمز التحقق)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "ar"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"phone\": \"+966551234567\",\n    \"phone_country_code\": \"+966\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/send-otp",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"send-otp"
+							]
+						},
+						"description": "إرسال رمز تحقق OTP إلى رقم جوال العميل."
+					}
+				},
+				{
+					"name": "Verify OTP (التحقق وتسجيل الدخول)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.data && jsonData.data.access_token) {",
+									"        pm.collectionVariables.set('token', jsonData.data.access_token);",
+									"        console.log('Token saved successfully: ' + jsonData.data.access_token);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "ar"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"phone\": \"+966551234567\",\n    \"otp_code\": \"1234\",\n    \"fcm_token\": \"fcm_sample_device_token_xyz\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/verify-otp",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"verify-otp"
+							]
+						},
+						"description": "التحقق من كود الـ OTP والحصول على توكن المصادقة Bearer Token وحفظه آلياً."
+					}
+				},
+				{
+					"name": "Complete Profile (إكمال بيانات المستخدم الجديد)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "ar"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"إسراء أحمد\",\n    \"email\": \"esraa@example.com\",\n    \"preferred_locale\": \"ar\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/complete-profile",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"complete-profile"
+							]
+						},
+						"description": "إكمال الاسم واللغة للمستخدم المسجل حديثاً."
+					}
+				},
+				{
+					"name": "Get Profile (الملف الشخصي)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "ar"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/auth/profile",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"profile"
+							]
+						},
+						"description": "استرجاع بيانات الحساب، الرصيد، وعدد الطلبات."
+					}
+				},
+				{
+					"name": "Update Profile (تعديل الملف الشخصي)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "ar"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"إسراء أحمد المحدثة\",\n    \"email\": \"esraa.new@example.com\",\n    \"preferred_locale\": \"ar\",\n    \"fcm_token\": \"updated_fcm_token_123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/profile",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"profile"
+							]
+						}
+					}
+				},
+				{
+					"name": "Logout (تسجيل الخروج)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/auth/logout",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"logout"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "2. 🏠 Home, CMS & Settings (الرئيسية والإعدادات)",
+			"item": [
+				{
+					"name": "Home Screen Data (بيانات الشاشة الرئيسية)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "ar"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/home",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"home"
+							]
+						},
+						"description": "جلب بيانات الرئيسية: الهيدر الترحيبي، وبطاقتي الطباعة الذاتية والمسبقة."
+					}
+				},
+				{
+					"name": "Get System Settings (الإعدادات العامة)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "ar"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/settings",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"settings"
+							]
+						},
+						"description": "إرجاع الإعدادات العامة: نسبة الضريبة (15%)، الحد الأقصى للملفات (50MB)، وأرقام الدعم."
+					}
+				},
+				{
+					"name": "Get Static Pages List (قائمة الصفحات التعريفية المفعلة)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "ar"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/pages",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"pages"
+							]
+						},
+						"description": "جلب قائمة بجميع الصفحات التعريفية المفعلة (من نحن، الشروط، سياسة الخصوصية)."
+					}
+				},
+				{
+					"name": "Get Single Page By Slug (جلب صفحة محددة)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "ar"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/pages?slug=about-us",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"pages"
+							],
+							"query": [
+								{
+									"key": "slug",
+									"value": "about-us"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get FAQs (الأسئلة الشائعة)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "ar"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/faqs",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"faqs"
+							]
+						}
+					}
+				},
+				{
+					"name": "Submit Contact Us (إرسال رسالة تواصل)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "ar"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"إسراء أحمد\",\n    \"phone\": \"+966551234567\",\n    \"email\": \"esraa@example.com\",\n    \"subject\": \"استفسار بخصوص الطباعة الفورية\",\n    \"message\": \"هل يمكنني طباعة أوراق بمقاس A3 في ماكينة مكتبة الملك فهد؟\",\n    \"branch_id\": 1\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/contact-us",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"contact-us"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "3. 🏢 Branches, Pricing & Options (الفروع والتسعير)",
+			"item": [
+				{
+					"name": "Get Branches (الفروع مرتبة حسب الأقرب)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "ar"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/branches?latitude=24.7136&longitude=46.6753",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"branches"
+							],
+							"query": [
+								{
+									"key": "latitude",
+									"value": "24.7136"
+								},
+								{
+									"key": "longitude",
+									"value": "46.6753"
+								}
+							]
+						},
+						"description": "جلب قائمة الفروع وساعات العمل، مع الترتيب التلقائي بالأقرب وحساب distance_km عند تمرير الإحداثيات."
+					}
+				},
+				{
+					"name": "Get Single Branch (تفاصيل فرع محدد)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "ar"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/branches/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"branches",
+								"1"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Pricing Rules & Finishing (أسعار الطباعة والتجليد)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "ar"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/pricing-rules",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"pricing-rules"
+							]
+						},
+						"description": "جلب أسعار الصفحات (أبيض وأسود، ألوان، وجهين) وخيارات التجليد والتشطيب."
+					}
+				}
+			]
+		},
+		{
+			"name": "4. 📄 File Processing & Price Calculator (الملفات وحاسبة التكلفة)",
+			"item": [
+				{
+					"name": "Upload & Inspect File (رفع الملف وقراءة الصفحات تلقائياً)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "ar"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/files/upload-and-inspect",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"files",
+								"upload-and-inspect"
+							]
+						},
+						"description": "رفع ملف PDF أو صورة (بحد أقصى 50MB) وقراءة عدد الصفحات آلياً."
+					}
+				},
+				{
+					"name": "Calculate Print Price (حاسبة تكلفة الطباعة)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "ar"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"service_type\": \"self_printing\",\n    \"detected_page_count\": 8,\n    \"page_range_selection\": \"all\",\n    \"copies_count\": 1,\n    \"paper_size\": \"A4\",\n    \"color_mode\": \"black_and_white\",\n    \"side_mode\": \"single_sided\",\n    \"finishing_option_id\": null\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/files/calculate-price",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"files",
+								"calculate-price"
+							]
+						},
+						"description": "حساب التكلفة التقديرية، عدد الورق المطلوب، وضريبة القيمة المضافة 15%."
+					}
+				}
+			]
+		},
+		{
+			"name": "5. 🤖 Kiosk Verification & Pre-Check (فحص الماكينة الذاتية)",
+			"item": [
+				{
+					"name": "Verify Kiosk Machine (فحص جاهزية الماكينة عبر QR أو NFC)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "ar"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"qr_token\": \"QR-TB-101-RYD\",\n    \"total_sheets_needed\": 8,\n    \"paper_size\": \"A4\",\n    \"color_mode\": \"black_and_white\",\n    \"side_mode\": \"single_sided\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/kiosks/verify-machine",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"kiosks",
+								"verify-machine"
+							]
+						},
+						"description": "فحص الماكينة قبل الطباعة: الاتصال، توفر الورق، مستويات الحبر، وتوافق الإعدادات."
+					}
+				}
+			]
+		},
+		{
+			"name": "6. 🛍️ Orders & Checkout (الطلبات والدفع)",
+			"item": [
+				{
+					"name": "Checkout Self-Print Order (إنشاء طلب طباعة ذاتية فورية)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "ar"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"kiosk_machine_id\": 1,\n    \"file_path\": \"uploads/sample_lecture.pdf\",\n    \"original_file_name\": \"محاضرة_الفيزياء.pdf\",\n    \"file_extension\": \"pdf\",\n    \"file_size_bytes\": 4404019,\n    \"detected_page_count\": 8,\n    \"page_range_selection\": \"all\",\n    \"copies_count\": 1,\n    \"paper_size\": \"A4\",\n    \"color_mode\": \"black_and_white\",\n    \"side_mode\": \"single_sided\",\n    \"payment_method\": \"apple_pay\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/orders/self-print/checkout",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"orders",
+								"self-print",
+								"checkout"
+							]
+						},
+						"description": "تأكيد الدفع وخصم الورق وإرسال أمر الطباعة الفوري للماكينة."
+					}
+				},
+				{
+					"name": "Checkout Pre-Order (إنشاء طلب طباعة مسبقة للفروع)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "ar"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"branch_id\": 1,\n    \"scheduled_pickup_at\": \"2026-09-26 14:00:00\",\n    \"file_path\": \"uploads/graduation_project.pdf\",\n    \"original_file_name\": \"مشروع_التخرج_النهائي.pdf\",\n    \"file_extension\": \"pdf\",\n    \"file_size_bytes\": 12582912,\n    \"detected_page_count\": 40,\n    \"page_range_selection\": \"all\",\n    \"copies_count\": 1,\n    \"paper_size\": \"A4\",\n    \"color_mode\": \"color\",\n    \"side_mode\": \"double_sided\",\n    \"finishing_option_id\": 1,\n    \"payment_method\": \"card\",\n    \"user_notes\": \"يرجى التجليد بعناية فائقة\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/orders/pre-order/checkout",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"orders",
+								"pre-order",
+								"checkout"
+							]
+						},
+						"description": "إنشاء طلب مسبق للفرع وتحديد موعد الاستلام وخيارات التجليد."
+					}
+				},
+				{
+					"name": "Get My Orders List (قائمة طلباتي)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "ar"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/orders?type=active",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"orders"
+							],
+							"query": [
+								{
+									"key": "type",
+									"value": "active",
+									"description": "active أو completed"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Order Details (تفاصيل الطلب وسجل التتبع)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "ar"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/orders/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"orders",
+								"1"
+							]
+						}
+					}
+				},
+				{
+					"name": "Cancel Order (إلغاء الطلب واسترجاع المبلغ للمحفظة)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "ar"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/orders/2/cancel",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"orders",
+								"2",
+								"cancel"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "7. 🔔 Notifications & Wallet (الإشعارات والمحفظة)",
+			"item": [
+				{
+					"name": "Get Notifications (قائمة الإشعارات)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "ar"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/notifications",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"notifications"
+							]
+						}
+					}
+				},
+				{
+					"name": "Mark Notification As Read (تحديد إشعار كمقروء)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/notifications/1/read",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"notifications",
+								"1",
+								"read"
+							]
+						}
+					}
+				},
+				{
+					"name": "Mark All Notifications As Read (تحديد الكل كمقروء)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/notifications/read-all",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"notifications",
+								"read-all"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Wallet Transactions (رصيد وحركات المحفظة)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "ar"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/wallet/transactions",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"wallet",
+								"transactions"
+							]
+						}
+					}
+				}
+			]
+		}
+	]
+}
