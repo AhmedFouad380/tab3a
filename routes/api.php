@@ -21,6 +21,11 @@ Route::prefix('v1')->group(function () {
 
     // 1. Authentication & Onboarding (Public)
     Route::prefix('auth')->group(function () {
+        Route::post('/register', [AuthController::class, 'register']);
+        Route::post('/verify-register-otp', [AuthController::class, 'verifyRegisterOtp']);
+        Route::post('/login', [AuthController::class, 'login']);
+        Route::post('/verify-login-otp', [AuthController::class, 'verifyLoginOtp']);
+        Route::post('/resend-otp', [AuthController::class, 'resendOtp']);
         Route::post('/send-otp', [AuthController::class, 'sendOtp']);
         Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
     });
