@@ -379,6 +379,26 @@ class AuthController extends BaseApiController
     }
 
     /**
+     * Delete user account (Soft delete & revoke tokens)
+     */
+    public function deleteAccount(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        // Revoke all tokens
+        $user->tokens()->delete();
+
+        // Soft delete user
+        $user->delete();
+
+        $message = $this->getLocale() === 'en'
+            ? 'Account deleted successfully'
+            : 'تم حذف الحساب بنجاح';
+
+        return $this->success(null, $message);
+    }
+
+    /**
      * Logout
      */
     public function logout(Request $request): JsonResponse

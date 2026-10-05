@@ -135,4 +135,33 @@ class AuthApiTest extends TestCase
                 ],
             ]);
     }
+
+    public function test_authenticated_user_can_delete_account(): void
+    {
+        $user = User::create([
+            'name' => 'أحمد فؤاد',
+            'phone' => '0501112233',
+            'phone_verified_at' => now(),
+            'status' => 'active',
+        ]);
+
+        $token = $user->createToken('test_token')->plainTextToken;
+
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->deleteJson('/api/v1/auth/delete-account');
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'تم حذف الحساب بنجاح',
+            ]);
+
+        $this->assertSoftDeleted('users', [
+            'id' => $user->id,
+        ]);
+
+        $this->assertDatabaseMissing('personal_access_tokens', [
+            'tokenable_id' => $user->id,
+        ]);
+    }
 }

@@ -59,6 +59,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/complete-profile', [AuthController::class, 'completeProfile']);
             Route::get('/profile', [AuthController::class, 'getProfile']);
             Route::put('/profile', [AuthController::class, 'updateProfile']);
+            Route::delete('/delete-account', [AuthController::class, 'deleteAccount']);
             Route::post('/logout', [AuthController::class, 'logout']);
         });
 

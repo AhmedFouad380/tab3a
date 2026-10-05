@@ -22,7 +22,7 @@
 			"name": "1. 🔐 Authentication & Profile (التوثيق والحساب)",
 			"item": [
 				{
-					"name": "Send OTP (إرسال رمز التحقق)",
+					"name": "Register (تسجيل حساب جديد)",
 					"request": {
 						"method": "POST",
 						"header": [
@@ -37,7 +37,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"phone\": \"+966551234567\",\n    \"phone_country_code\": \"+966\"\n}",
+							"raw": "{\n    \"name\": \"أحمد فؤاد\",\n    \"phone\": \"+966551234567\",\n    \"phone_country_code\": \"+966\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -45,20 +45,20 @@
 							}
 						},
 						"url": {
-							"raw": "{{base_url}}/auth/send-otp",
+							"raw": "{{base_url}}/auth/register",
 							"host": [
 								"{{base_url}}"
 							],
 							"path": [
 								"auth",
-								"send-otp"
+								"register"
 							]
 						},
-						"description": "إرسال رمز تحقق OTP إلى رقم جوال العميل."
+						"description": "تسجيل مستخدم جديد بالاسم ورقم الهاتف وإرسال رمز التحقق OTP."
 					}
 				},
 				{
-					"name": "Verify OTP (التحقق وتسجيل الدخول)",
+					"name": "Verify Register OTP (تأكيد تسجيل الحساب)",
 					"event": [
 						{
 							"listen": "test",
@@ -98,16 +98,141 @@
 							}
 						},
 						"url": {
-							"raw": "{{base_url}}/auth/verify-otp",
+							"raw": "{{base_url}}/auth/verify-register-otp",
 							"host": [
 								"{{base_url}}"
 							],
 							"path": [
 								"auth",
-								"verify-otp"
+								"verify-register-otp"
 							]
 						},
-						"description": "التحقق من كود الـ OTP والحصول على توكن المصادقة Bearer Token وحفظه آلياً."
+						"description": "تأكيد كود التحقق لعملية التسجيل وتفعيل الحساب والحصول على الـ Access Token."
+					}
+				},
+				{
+					"name": "Login (تسجيل الدخول)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "ar"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"phone\": \"+966551234567\",\n    \"phone_country_code\": \"+966\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"description": "طلب تسجيل الدخول برقم الهاتف وإرسال رمز التحقق OTP (يتحقق من وجود الحساب وعدم حظره)."
+					}
+				},
+				{
+					"name": "Verify Login OTP (تأكيد تسجيل الدخول)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.data && jsonData.data.access_token) {",
+									"        pm.collectionVariables.set('token', jsonData.data.access_token);",
+									"        console.log('Token saved successfully: ' + jsonData.data.access_token);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "ar"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"phone\": \"+966551234567\",\n    \"otp_code\": \"1234\",\n    \"fcm_token\": \"fcm_sample_device_token_xyz\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/verify-login-otp",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"verify-login-otp"
+							]
+						},
+						"description": "تأكيد كود التحقق لعملية تسجيل الدخول والحصول على الـ Access Token."
+					}
+				},
+				{
+					"name": "Resend OTP (إعادة إرسال رمز التحقق)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "ar"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"phone\": \"+966551234567\",\n    \"type\": \"login\",\n    \"phone_country_code\": \"+966\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/resend-otp",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"resend-otp"
+							]
+						},
+						"description": "إعادة إرسال رمز التحقق OTP سواء لعملية الدخول (login) أو التسجيل (register)."
 					}
 				},
 				{
@@ -268,6 +393,43 @@
 								"logout"
 							]
 						}
+					}
+				},
+				{
+					"name": "Delete Account (حذف الحساب)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "ar"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/auth/delete-account",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"delete-account"
+							]
+						},
+						"description": "حذف حساب المستخدم نهائياً (Soft Delete) وإلغاء جميع التوكنز الخاصة به."
 					}
 				}
 			]
