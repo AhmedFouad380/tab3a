@@ -16,6 +16,7 @@ class PriceCalculationRequest extends BaseApiRequest
             'side_mode' => 'required|in:single_sided,double_sided',
             'paper_type' => 'nullable|string',
             'finishing_option_id' => 'nullable|exists:finishing_options,id',
+            'is_teacher' => 'nullable|boolean',
         ];
     }
 }

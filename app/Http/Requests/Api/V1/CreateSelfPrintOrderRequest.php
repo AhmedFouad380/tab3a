@@ -19,6 +19,7 @@ class CreateSelfPrintOrderRequest extends BaseApiRequest
             'color_mode' => 'required|in:black_and_white,color',
             'side_mode' => 'required|in:single_sided,double_sided',
             'payment_method' => 'required|in:apple_pay,card,wallet',
+            'is_teacher' => 'nullable|boolean',
         ];
     }
 }

@@ -55,4 +55,149 @@ class Branch extends Model
     {
         return $this->hasMany(Admin::class);
     }
+
+    /**
+     * Synchronize working hour schedules from the form repeater.
+     */
+    public function syncWorkingHours(array $schedules): void
+    {
+        $allDays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+        $processedDays = [];
+
+        foreach ($schedules as $schedule) {
+            $days = (array) ($schedule['days'] ?? []);
+            $isDayOff = (bool) ($schedule['is_day_off'] ?? false);
+            $opening = !$isDayOff && !empty($schedule['opening_time'])
+                ? (strlen($schedule['opening_time']) === 5 ? $schedule['opening_time'] . ':00' : $schedule['opening_time'])
+                : '00:00:00';
+            $closing = !$isDayOff && !empty($schedule['closing_time'])
+                ? (strlen($schedule['closing_time']) === 5 ? $schedule['closing_time'] . ':00' : $schedule['closing_time'])
+                : '00:00:00';
+
+            foreach ($days as $day) {
+                if (!in_array($day, $allDays) || in_array($day, $processedDays)) {
+                    continue;
+                }
+
+                BranchWorkingHour::updateOrCreate(
+                    [
+                        'branch_id' => $this->id,
+                        'day_of_week' => $day,
+                    ],
+                    [
+                        'opening_time' => $opening,
+                        'closing_time' => $closing,
+                        'is_day_off' => $isDayOff,
+                    ]
+                );
+
+                $processedDays[] = $day;
+            }
+        }
+
+        // Delete any days that are no longer part of any schedule
+        BranchWorkingHour::where('branch_id', $this->id)
+            ->whereNotIn('day_of_week', $processedDays)
+            ->delete();
+    }
+
+    /**
+     * Group existing working hours into schedules for editing in Filament.
+     */
+    public function getWorkingHoursSchedules(): array
+    {
+        $dayOrder = [
+            'sunday' => 1,
+            'monday' => 2,
+            'tuesday' => 3,
+            'wednesday' => 4,
+            'thursday' => 5,
+            'friday' => 6,
+            'saturday' => 7,
+        ];
+
+        $hours = $this->workingHours()->get()->sortBy(fn ($wh) => $dayOrder[$wh->day_of_week] ?? 99);
+
+        if ($hours->isEmpty()) {
+            return [];
+        }
+
+        $grouped = [];
+        foreach ($hours as $wh) {
+            $open = substr($wh->opening_time, 0, 5);
+            $close = substr($wh->closing_time, 0, 5);
+            $key = ($wh->is_day_off ? '1' : '0') . "_{$open}_{$close}";
+
+            if (!isset($grouped[$key])) {
+                $grouped[$key] = [
+                    'days' => [],
+                    'opening_time' => $open,
+                    'closing_time' => $close,
+                    'is_day_off' => (bool) $wh->is_day_off,
+                ];
+            }
+
+            $grouped[$key]['days'][] = $wh->day_of_week;
+        }
+
+        return array_values($grouped);
+    }
+
+    /**
+     * Get human-readable summary of working hours.
+     */
+    public function getWorkingHoursSummaryAttribute(): string
+    {
+        $schedules = $this->getWorkingHoursSchedules();
+        if (empty($schedules)) {
+            return 'غير محدد';
+        }
+
+        $daysMap = [
+            'sunday' => 'الأحد',
+            'monday' => 'الإثنين',
+            'tuesday' => 'الثلاثاء',
+            'wednesday' => 'الأربعاء',
+            'thursday' => 'الخميس',
+            'friday' => 'الجمعة',
+            'saturday' => 'السبت',
+        ];
+
+        $summaries = [];
+        foreach ($schedules as $schedule) {
+            $days = array_map(fn ($d) => $daysMap[$d] ?? $d, $schedule['days'] ?? []);
+            $daysStr = implode('، ', $days);
+
+            if (!empty($schedule['is_day_off'])) {
+                $summaries[] = "مغلق ({$daysStr})";
+                continue;
+            }
+
+            $from = substr($schedule['opening_time'] ?? '', 0, 5);
+            $to = substr($schedule['closing_time'] ?? '', 0, 5);
+            if ($from && $to) {
+                $summaries[] = "{$from} - {$to} ({$daysStr})";
+            }
+        }
+
+        return empty($summaries) ? 'مغلق' : implode(' | ', $summaries);
+    }
+
+    /**
+     * Check if branch is currently open.
+     */
+    public function isOpenNow(): bool
+    {
+        $now = now()->setTimezone('Asia/Riyadh');
+        $today = strtolower($now->format('l'));
+        $currentTime = $now->format('H:i:s');
+
+        $todayHour = $this->workingHours()->where('day_of_week', $today)->first();
+
+        if (!$todayHour || $todayHour->is_day_off) {
+            return false;
+        }
+
+        return $currentTime >= $todayHour->opening_time && $currentTime <= $todayHour->closing_time;
+    }
 }

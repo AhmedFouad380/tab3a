@@ -82,6 +82,88 @@ class BranchResource extends Resource
                             ->label('الفرع نشط ويعمل')
                             ->default(true),
                     ]),
+
+                Forms\Components\Section::make('⏰ مواعيد وساعات العمل')
+                    ->description('حدد فترات ومواعيد العمل (من وإلى) مع اختيار أيام الأسبوع المناسبة لكل فترة')
+                    ->schema([
+                        Forms\Components\Repeater::make('working_hours_schedules')
+                            ->label('فترات ومواعيد العمل')
+                            ->schema([
+                                Forms\Components\CheckboxList::make('days')
+                                    ->label('أيام الأسبوع')
+                                    ->options([
+                                        'sunday' => 'الأحد (Sunday)',
+                                        'monday' => 'الإثنين (Monday)',
+                                        'tuesday' => 'الثلاثاء (Tuesday)',
+                                        'wednesday' => 'الأربعاء (Wednesday)',
+                                        'thursday' => 'الخميس (Thursday)',
+                                        'friday' => 'الجمعة (Friday)',
+                                        'saturday' => 'السبت (Saturday)',
+                                    ])
+                                    ->columns(4)
+                                    ->bulkToggleable()
+                                    ->required()
+                                    ->columnSpanFull(),
+
+                                Forms\Components\TimePicker::make('opening_time')
+                                    ->label('وقت بدء العمل (من)')
+                                    ->seconds(false)
+                                    ->default('08:00')
+                                    ->required(fn (Forms\Get $get) => !$get('is_day_off'))
+                                    ->visible(fn (Forms\Get $get) => !$get('is_day_off')),
+
+                                Forms\Components\TimePicker::make('closing_time')
+                                    ->label('وقت انتهاء العمل (إلى)')
+                                    ->seconds(false)
+                                    ->default('22:00')
+                                    ->required(fn (Forms\Get $get) => !$get('is_day_off'))
+                                    ->visible(fn (Forms\Get $get) => !$get('is_day_off')),
+
+                                Forms\Components\Toggle::make('is_day_off')
+                                    ->label('عطلة / مغلق في هذه الأيام')
+                                    ->default(false)
+                                    ->live(),
+                            ])
+                            ->columns(3)
+                            ->default([
+                                [
+                                    'days' => ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday'],
+                                    'opening_time' => '08:00',
+                                    'closing_time' => '22:00',
+                                    'is_day_off' => false,
+                                ],
+                            ])
+                            ->addActionLabel('+ إضافة فترة عمل أخرى')
+                            ->collapsible()
+                            ->itemLabel(function (array $state): ?string {
+                                $days = $state['days'] ?? [];
+                                if (empty($days)) {
+                                    return 'فترة عمل جديدة';
+                                }
+
+                                $daysMap = [
+                                    'sunday' => 'الأحد',
+                                    'monday' => 'الإثنين',
+                                    'tuesday' => 'الثلاثاء',
+                                    'wednesday' => 'الأربعاء',
+                                    'thursday' => 'الخميس',
+                                    'friday' => 'الجمعة',
+                                    'saturday' => 'السبت',
+                                ];
+
+                                $dayNames = array_map(fn ($d) => $daysMap[$d] ?? $d, $days);
+                                $daysStr = implode('، ', $dayNames);
+
+                                if (!empty($state['is_day_off'])) {
+                                    return "🚫 عطلة رسمية: {$daysStr}";
+                                }
+
+                                $from = !empty($state['opening_time']) ? substr($state['opening_time'], 0, 5) : '--:--';
+                                $to = !empty($state['closing_time']) ? substr($state['closing_time'], 0, 5) : '--:--';
+
+                                return "🕒 من {$from} إلى {$to} ({$daysStr})";
+                            }),
+                    ]),
             ]);
     }
 
@@ -98,6 +180,19 @@ class BranchResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('phone')
                     ->label('الهاتف'),
+                Tables\Columns\TextColumn::make('working_hours_summary')
+                    ->label('مواعيد العمل')
+                    ->badge()
+                    ->color('info')
+                    ->tooltip(fn (Branch $record) => $record->working_hours_summary),
+                Tables\Columns\IconColumn::make('is_open')
+                    ->label('مفتوح الآن')
+                    ->state(fn (Branch $record) => $record->isOpenNow())
+                    ->boolean()
+                    ->trueIcon('heroicon-o-check-circle')
+                    ->falseIcon('heroicon-o-x-circle')
+                    ->trueColor('success')
+                    ->falseColor('danger'),
                 Tables\Columns\IconColumn::make('allows_pre_order')
                     ->label('طباعة مسبقة')
                     ->boolean(),

@@ -8,10 +8,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Spatie\Permission\Traits\HasRoles;
 
 class Admin extends Authenticatable implements FilamentUser
 {
-    use HasFactory, Notifiable, SoftDeletes;
+    use HasFactory, Notifiable, SoftDeletes, HasRoles;
+
+    protected string $guard_name = 'admin';
 
     protected $fillable = [
         'name',
@@ -40,6 +43,19 @@ class Admin extends Authenticatable implements FilamentUser
     public function canAccessPanel(Panel $panel): bool
     {
         return $this->is_active;
+    }
+
+    protected static function booted(): void
+    {
+        static::saved(function (Admin $admin) {
+            if ($admin->role && !$admin->hasRole($admin->role)) {
+                $role = \Spatie\Permission\Models\Role::firstOrCreate([
+                    'name' => $admin->role,
+                    'guard_name' => 'admin',
+                ]);
+                $admin->assignRole($role);
+            }
+        });
     }
 
     public function branch()

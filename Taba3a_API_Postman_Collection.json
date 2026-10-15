@@ -37,7 +37,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"name\": \"أحمد فؤاد\",\n    \"phone\": \"+966551234567\",\n    \"phone_country_code\": \"+966\"\n}",
+							"raw": "{\n    \"name\": \"شركة الطباعة الحديثة\",\n    \"phone\": \"+966551234567\",\n    \"phone_country_code\": \"+966\",\n    \"is_company\": true,\n    \"tax_number\": \"300123456789003\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -54,7 +54,7 @@
 								"register"
 							]
 						},
-						"description": "تسجيل مستخدم جديد بالاسم ورقم الهاتف وإرسال رمز التحقق OTP."
+						"description": "تسجيل مستخدم جديد بالاسم ورقم الهاتف، مع إمكانية التسجيل كشركة (is_company: true) وإدخال الرقم الضريبي (tax_number)."
 					}
 				},
 				{

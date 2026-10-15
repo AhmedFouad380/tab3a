@@ -164,4 +164,41 @@ class AuthApiTest extends TestCase
             'tokenable_id' => $user->id,
         ]);
     }
+
+    public function test_user_can_register_as_company_with_tax_number(): void
+    {
+        $response = $this->postJson('/api/v1/auth/register', [
+            'name' => 'شركة الطباعة المتقدمة',
+            'phone' => '0509998877',
+            'is_company' => true,
+            'tax_number' => '300123456789003',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+            ]);
+
+        $this->assertDatabaseHas('users', [
+            'name' => 'شركة الطباعة المتقدمة',
+            'phone' => '0509998877',
+            'is_company' => true,
+            'tax_number' => '300123456789003',
+        ]);
+    }
+
+    public function test_register_as_company_fails_without_tax_number(): void
+    {
+        $response = $this->postJson('/api/v1/auth/register', [
+            'name' => 'شركة الطباعة المتقدمة',
+            'phone' => '0509998877',
+            'is_company' => true,
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJson([
+                'success' => false,
+                'message' => 'الرقم الضريبي مطلوب عند التسجيل كشركة',
+            ]);
+    }
 }

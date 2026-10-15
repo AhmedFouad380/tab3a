@@ -133,6 +133,7 @@ class FileController extends BaseApiController
             'tax_amount' => $taxAmount,
             'total_amount' => $totalAmount,
             'currency' => 'SAR',
+            'is_teacher' => $request->boolean('is_teacher'),
         ]);
     }
 }

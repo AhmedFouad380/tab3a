@@ -70,6 +70,8 @@ Route::prefix('v1')->group(function () {
             Route::get('/', [OrderController::class, 'myOrders']);
             Route::get('/{id}', [OrderController::class, 'show']);
             Route::post('/{id}/cancel', [OrderController::class, 'cancel']);
+            Route::get('/{id}/download', [OrderController::class, 'downloadOrderFile']);
+            Route::get('/{id}/items/{itemId}/download', [OrderController::class, 'downloadItemFile']);
         });
 
         // Notifications

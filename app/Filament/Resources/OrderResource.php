@@ -56,6 +56,9 @@ class OrderResource extends Resource
                                     ->searchable(),
                                 Forms\Components\DateTimePicker::make('scheduled_pickup_at')
                                     ->label('موعد الاستلام المجدول'),
+                                Forms\Components\Toggle::make('is_teacher')
+                                    ->label('الشراء كمعلم (طلب معلم)')
+                                    ->columnSpanFull(),
                             ]),
 
                         Forms\Components\Section::make('الملفات المرفوعة ومواصفات الطباعة')
@@ -63,9 +66,24 @@ class OrderResource extends Resource
                                 Forms\Components\Repeater::make('items')
                                     ->relationship()
                                     ->schema([
+                                        Forms\Components\Hidden::make('id'),
+                                        Forms\Components\Hidden::make('file_path'),
                                         Forms\Components\TextInput::make('original_file_name')
                                             ->label('اسم الملف')
-                                            ->disabled(),
+                                            ->disabled()
+                                            ->suffixActions([
+                                                Forms\Components\Actions\Action::make('download_suffix')
+                                                    ->icon('heroicon-m-arrow-down-tray')
+                                                    ->tooltip('تنزيل الملف')
+                                                    ->color('success')
+                                                    ->url(fn (Forms\Get $get) => $get('id') ? route('admin.orders.items.download', $get('id')) : null),
+                                                Forms\Components\Actions\Action::make('preview_suffix')
+                                                    ->icon('heroicon-m-eye')
+                                                    ->tooltip('معاينة الملف في نافذة جديدة')
+                                                    ->color('info')
+                                                    ->openUrlInNewTab()
+                                                    ->url(fn (Forms\Get $get) => $get('id') ? route('admin.orders.items.preview', $get('id')) : null),
+                                            ]),
                                         Forms\Components\TextInput::make('detected_page_count')
                                             ->label('عدد الصفحات المقروء')
                                             ->numeric()
@@ -90,6 +108,22 @@ class OrderResource extends Resource
                                             ->label('إجمالي سعر الملف')
                                             ->numeric()
                                             ->prefix('SAR'),
+                                        Forms\Components\Actions::make([
+                                            Forms\Components\Actions\Action::make('download_file_btn')
+                                                ->label('تنزيل الملف المرفق')
+                                                ->icon('heroicon-o-arrow-down-tray')
+                                                ->color('success')
+                                                ->button()
+                                                ->url(fn (Forms\Get $get) => $get('id') ? route('admin.orders.items.download', $get('id')) : null),
+                                            Forms\Components\Actions\Action::make('preview_file_btn')
+                                                ->label('معاينة الملف (PDF)')
+                                                ->icon('heroicon-o-eye')
+                                                ->color('info')
+                                                ->button()
+                                                ->openUrlInNewTab()
+                                                ->url(fn (Forms\Get $get) => $get('id') ? route('admin.orders.items.preview', $get('id')) : null),
+                                        ])
+                                            ->columnSpanFull(),
                                     ])
                                     ->columns(3)
                                     ->addable(false)
@@ -162,6 +196,13 @@ class OrderResource extends Resource
                     ->formatStateUsing(fn (string $state) => $state === 'self_printing' ? '⚡ طباعة ذاتية' : '🏢 طباعة مسبقة')
                     ->badge()
                     ->color(fn (string $state) => $state === 'self_printing' ? 'info' : 'primary'),
+                Tables\Columns\IconColumn::make('is_teacher')
+                    ->label('شراء كمعلم')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-academic-cap')
+                    ->falseIcon('heroicon-o-minus')
+                    ->trueColor('warning')
+                    ->falseColor('gray'),
                 Tables\Columns\TextColumn::make('branch.name.ar')
                     ->label('الفرع / الماكينة')
                     ->placeholder(fn (Order $record) => $record->kiosk?->machine_code ?? '-'),
@@ -209,11 +250,31 @@ class OrderResource extends Resource
                         'completed' => 'مكتمل',
                         'cancelled' => 'ملغي',
                     ]),
+                Tables\Filters\TernaryFilter::make('is_teacher')
+                    ->label('شراء كمعلم')
+                    ->placeholder('الكل')
+                    ->trueLabel('طلبات معلمين')
+                    ->falseLabel('طلبات عادية'),
                 Tables\Filters\SelectFilter::make('branch_id')
                     ->label('الفرع')
                     ->relationship('branch', 'name->ar'),
             ])
             ->actions([
+                Tables\Actions\Action::make('download_file')
+                    ->label(fn (Order $record) => $record->items()->count() > 1 ? 'تنزيل الملفات (ZIP)' : 'تنزيل الملف')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->color('success')
+                    ->tooltip('تنزيل الملف المرفق للطباعة')
+                    ->url(fn (Order $record) => route('admin.orders.download', $record))
+                    ->visible(fn (Order $record) => $record->items()->exists()),
+                Tables\Actions\Action::make('preview_file')
+                    ->label('معاينة')
+                    ->icon('heroicon-o-eye')
+                    ->color('gray')
+                    ->tooltip('معاينة الملف المرفق في نافذة جديدة')
+                    ->url(fn (Order $record) => $record->items()->first() ? route('admin.orders.items.preview', $record->items()->first()) : null)
+                    ->openUrlInNewTab()
+                    ->visible(fn (Order $record) => $record->items()->exists()),
                 Tables\Actions\Action::make('mark_ready')
                     ->label('جاهز للاستلام')
                     ->icon('heroicon-o-bell-alert')

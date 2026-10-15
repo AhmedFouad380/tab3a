@@ -45,6 +45,15 @@ class UserResource extends Resource
                                 'en' => 'English',
                             ])
                             ->default('ar'),
+                        Forms\Components\Toggle::make('is_company')
+                            ->label('التسجيل كشركة')
+                            ->live()
+                            ->columnSpanFull(),
+                        Forms\Components\TextInput::make('tax_number')
+                            ->label('الرقم الضريبي')
+                            ->maxLength(50)
+                            ->visible(fn (Forms\Get $get): bool => (bool) $get('is_company'))
+                            ->required(fn (Forms\Get $get): bool => (bool) $get('is_company')),
                         Forms\Components\TextInput::make('wallet_balance')
                             ->label('رصيد المحفظة')
                             ->numeric()
@@ -74,6 +83,17 @@ class UserResource extends Resource
                     ->label('رقم الجوال')
                     ->searchable()
                     ->weight('bold'),
+                Tables\Columns\IconColumn::make('is_company')
+                    ->label('شركة')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-building-office-2')
+                    ->falseIcon('heroicon-o-user')
+                    ->trueColor('primary')
+                    ->falseColor('gray'),
+                Tables\Columns\TextColumn::make('tax_number')
+                    ->label('الرقم الضريبي')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('wallet_balance')
                     ->label('رصيد المحفظة')
                     ->money('SAR')
@@ -96,6 +116,11 @@ class UserResource extends Resource
                     ->sortable(),
             ])
             ->filters([
+                Tables\Filters\TernaryFilter::make('is_company')
+                    ->label('نوع الحساب')
+                    ->placeholder('الكل')
+                    ->trueLabel('شركات')
+                    ->falseLabel('أفراد'),
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
                         'active' => 'نشط',

@@ -14,6 +14,7 @@ class Order extends Model
         'order_number',
         'user_id',
         'order_type',
+        'is_teacher',
         'branch_id',
         'kiosk_machine_id',
         'scheduled_pickup_at',
@@ -33,6 +34,7 @@ class Order extends Model
     protected function casts(): array
     {
         return [
+            'is_teacher' => 'boolean',
             'scheduled_pickup_at' => 'datetime',
             'actual_pickup_at' => 'datetime',
             'subtotal' => 'decimal:2',

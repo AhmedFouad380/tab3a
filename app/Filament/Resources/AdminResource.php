@@ -40,15 +40,18 @@ class AdminResource extends Resource
                         Forms\Components\TextInput::make('phone')
                             ->label('رقم الهاتف')
                             ->tel(),
-                        Forms\Components\Select::make('role')
-                            ->label('الدور / الصلاحية')
-                            ->options([
+                        Forms\Components\Select::make('roles')
+                            ->label('الدور والصلاحية (Spatie Role)')
+                            ->relationship('roles', 'name', fn ($query) => $query->where('guard_name', 'admin'))
+                            ->getOptionLabelFromRecordUsing(fn ($record) => match ($record->name) {
                                 'super_admin' => 'مدير عام (Super Admin)',
                                 'admin' => 'مشرف نظام (Admin)',
                                 'branch_manager' => 'مدير / موظف فرع (Branch Staff)',
                                 'support_agent' => 'خدمة عملاء (Support)',
-                            ])
-                            ->default('admin')
+                                default => $record->name,
+                            })
+                            ->preload()
+                            ->searchable()
                             ->required(),
                         Forms\Components\Select::make('branch_id')
                             ->label('الفرع التابع له (لموظفي الفروع)')
@@ -77,8 +80,15 @@ class AdminResource extends Resource
                 Tables\Columns\TextColumn::make('email')
                     ->label('البريد الإلكتروني')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('role')
+                Tables\Columns\TextColumn::make('roles.name')
                     ->label('الدور')
+                    ->formatStateUsing(fn ($state) => match ($state) {
+                        'super_admin' => 'مدير عام',
+                        'admin' => 'مشرف نظام',
+                        'branch_manager' => 'موظف فرع',
+                        'support_agent' => 'خدمة عملاء',
+                        default => $state,
+                    })
                     ->badge(),
                 Tables\Columns\TextColumn::make('branch.name.ar')
                     ->label('الفرع')
@@ -91,14 +101,9 @@ class AdminResource extends Resource
                     ->dateTime('d/m/Y'),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('role')
+                Tables\Filters\SelectFilter::make('roles')
                     ->label('الدور')
-                    ->options([
-                        'super_admin' => 'Super Admin',
-                        'admin' => 'Admin',
-                        'branch_manager' => 'Branch Manager',
-                        'support_agent' => 'Support Agent',
-                    ]),
+                    ->relationship('roles', 'name', fn ($query) => $query->where('guard_name', 'admin')),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

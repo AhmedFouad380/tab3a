@@ -22,6 +22,7 @@ class CreatePreOrderRequest extends BaseApiRequest
             'finishing_option_id' => 'nullable|exists:finishing_options,id',
             'payment_method' => 'required|in:apple_pay,card,wallet',
             'user_notes' => 'nullable|string',
+            'is_teacher' => 'nullable|boolean',
         ];
     }
 }

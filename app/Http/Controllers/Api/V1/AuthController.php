@@ -34,11 +34,16 @@ class AuthController extends BaseApiController
             return $this->error($errMsg, 422);
         }
 
+        $isCompany = $request->boolean('is_company');
+        $taxNumber = $isCompany ? $request->tax_number : null;
+
         if (!$existingUser) {
             $existingUser = User::create([
                 'name' => $request->name,
                 'phone' => $phone,
                 'phone_country_code' => $countryCode,
+                'is_company' => $isCompany,
+                'tax_number' => $taxNumber,
                 'preferred_locale' => $this->getLocale(),
                 'status' => 'active',
             ]);
@@ -46,6 +51,8 @@ class AuthController extends BaseApiController
             $existingUser->update([
                 'name' => $request->name,
                 'phone_country_code' => $countryCode,
+                'is_company' => $isCompany,
+                'tax_number' => $taxNumber,
                 'preferred_locale' => $this->getLocale(),
             ]);
         }
@@ -343,11 +350,18 @@ class AuthController extends BaseApiController
     public function completeProfile(CompleteProfileRequest $request): JsonResponse
     {
         $user = $request->user();
-        $user->update([
+        $dataToUpdate = [
             'name' => $request->name,
             'email' => $request->email ?? $user->email,
             'preferred_locale' => $request->preferred_locale ?? $user->preferred_locale,
-        ]);
+        ];
+
+        if ($request->has('is_company')) {
+            $dataToUpdate['is_company'] = $request->boolean('is_company');
+            $dataToUpdate['tax_number'] = $dataToUpdate['is_company'] ? $request->tax_number : null;
+        }
+
+        $user->update($dataToUpdate);
 
         $message = $this->getLocale() === 'en' ? 'Profile completed successfully' : 'تم حفظ البيانات بنجاح';
 
@@ -371,7 +385,16 @@ class AuthController extends BaseApiController
     public function updateProfile(UpdateProfileRequest $request): JsonResponse
     {
         $user = $request->user();
-        $user->update($request->only(['name', 'email', 'preferred_locale', 'fcm_token']));
+        $dataToUpdate = $request->only(['name', 'email', 'preferred_locale', 'fcm_token']);
+
+        if ($request->has('is_company')) {
+            $dataToUpdate['is_company'] = $request->boolean('is_company');
+            $dataToUpdate['tax_number'] = $dataToUpdate['is_company'] ? $request->tax_number : null;
+        } elseif ($request->filled('tax_number') && $user->is_company) {
+            $dataToUpdate['tax_number'] = $request->tax_number;
+        }
+
+        $user->update($dataToUpdate);
 
         $message = $this->getLocale() === 'en' ? 'Profile updated successfully' : 'تم تحديث الملف الشخصي بنجاح';
 

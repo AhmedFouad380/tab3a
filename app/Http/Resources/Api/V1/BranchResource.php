@@ -23,6 +23,8 @@ class BranchResource extends JsonResource
             'whatsapp' => $this->whatsapp,
             'email' => $this->email,
             'allows_pre_order' => (bool) $this->allows_pre_order,
+            'is_open' => $this->isOpenNow(),
+            'working_hours_summary' => $this->working_hours_summary,
             'working_hours' => $this->whenLoaded('workingHours', function () {
                 return $this->workingHours->map(function ($wh) {
                     return [

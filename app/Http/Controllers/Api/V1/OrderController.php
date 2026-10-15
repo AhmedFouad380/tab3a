@@ -17,6 +17,8 @@ use App\Models\WalletTransaction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use ZipArchive;
 
 class OrderController extends BaseApiController
 {
@@ -68,6 +70,7 @@ class OrderController extends BaseApiController
                 'order_number' => $orderNumber,
                 'user_id' => $user->id,
                 'order_type' => 'self_printing',
+                'is_teacher' => $request->boolean('is_teacher'),
                 'branch_id' => $kiosk->branch_id,
                 'kiosk_machine_id' => $kiosk->id,
                 'status' => 'completed',
@@ -207,6 +210,7 @@ class OrderController extends BaseApiController
                 'order_number' => $orderNumber,
                 'user_id' => $user->id,
                 'order_type' => 'pre_order',
+                'is_teacher' => $request->boolean('is_teacher'),
                 'branch_id' => $request->branch_id,
                 'scheduled_pickup_at' => $request->scheduled_pickup_at,
                 'status' => 'pending',
@@ -373,5 +377,75 @@ class OrderController extends BaseApiController
             : 'تم إلغاء الطلب واسترجاع المبلغ إلى محفظتك بنجاح';
 
         return $this->success(null, $message);
+    }
+
+    /**
+     * Download Order Attached File(s)
+     */
+    public function downloadOrderFile(Request $request, int $id)
+    {
+        $user = $request->user();
+        $order = Order::with('items')->where('user_id', $user->id)->find($id);
+
+        if (!$order) {
+            return $this->error($this->getLocale() === 'en' ? 'Order not found' : 'الطلب غير موجود', 404);
+        }
+
+        $items = $order->items;
+        if ($items->isEmpty()) {
+            return $this->error($this->getLocale() === 'en' ? 'No attached files found' : 'لا توجد ملفات مرفقة لهذا الطلب', 404);
+        }
+
+        if ($items->count() === 1) {
+            $item = $items->first();
+            if (!$item->file_path || !Storage::disk('public')->exists($item->file_path)) {
+                return $this->error($this->getLocale() === 'en' ? 'File not found on server' : 'الملف غير موجود على السيرفر', 404);
+            }
+            return Storage::disk('public')->download($item->file_path, $item->original_file_name ?: basename($item->file_path));
+        }
+
+        $zipFileName = "order_{$order->order_number}_files.zip";
+        $tempPath = tempnam(sys_get_temp_dir(), 'order_zip_');
+
+        $zip = new ZipArchive();
+        if ($zip->open($tempPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+            return $this->error($this->getLocale() === 'en' ? 'Failed to create zip' : 'فشل إنشاء الملف المضغوط', 500);
+        }
+
+        $added = 0;
+        foreach ($items as $idx => $item) {
+            if ($item->file_path && Storage::disk('public')->exists($item->file_path)) {
+                $zip->addFile(Storage::disk('public')->path($item->file_path), ($idx + 1) . '_' . ($item->original_file_name ?: basename($item->file_path)));
+                $added++;
+            }
+        }
+        $zip->close();
+
+        if ($added === 0) {
+            @unlink($tempPath);
+            return $this->error($this->getLocale() === 'en' ? 'Files not found on server' : 'الملفات غير موجودة على السيرفر', 404);
+        }
+
+        return response()->download($tempPath, $zipFileName)->deleteFileAfterSend(true);
+    }
+
+    /**
+     * Download Specific Item File
+     */
+    public function downloadItemFile(Request $request, int $orderId, int $itemId)
+    {
+        $user = $request->user();
+        $order = Order::where('user_id', $user->id)->find($orderId);
+
+        if (!$order) {
+            return $this->error($this->getLocale() === 'en' ? 'Order not found' : 'الطلب غير موجود', 404);
+        }
+
+        $item = $order->items()->find($itemId);
+        if (!$item || !$item->file_path || !Storage::disk('public')->exists($item->file_path)) {
+            return $this->error($this->getLocale() === 'en' ? 'File not found on server' : 'الملف غير موجود على السيرفر', 404);
+        }
+
+        return Storage::disk('public')->download($item->file_path, $item->original_file_name ?: basename($item->file_path));
     }
 }
