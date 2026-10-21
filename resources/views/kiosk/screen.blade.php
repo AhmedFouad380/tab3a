@@ -633,7 +633,13 @@
                 <div style="font-size: 15px; color: var(--text-muted); margin-top: 10px;" id="print-percent">
                     0%
                 </div>
+                <div id="print-status-note" style="font-size: 14px; color: #93c5fd; margin-top: 8px;">
+                    ⚡ تم إرسال أمر الطباعة التلقائي إلى الطابعة المتصلة...
+                </div>
             </div>
+
+            <!-- Hidden Iframe for Direct Silent Hardware Printing -->
+            <iframe id="kiosk-print-frame" style="position: fixed; right: 0; bottom: 0; width: 0; height: 0; border: 0; opacity: 0; pointer-events: none;"></iframe>
 
             <!-- Stage 6: Completed -->
             <div class="center-state" id="view-completed" style="display: none;">
@@ -645,9 +651,9 @@
                 <div style="font-size: 14px; color: var(--text-muted); margin: 15px 0;">
                     🛡️ حفاظاً على خصوصيتك، تم حذف الملف تلقائياً من خوادمنا.
                 </div>
-                <div class="stat-item" style="font-size: 16px; color: #a7f3d0;">
-                    ⏳ ستعود الشاشة لوضع الاستعداد خلال <strong id="reset-counter" style="margin: 0 4px; font-size: 20px;">7</strong> ثوانٍ
-                </div>
+                <button type="button" id="btn-return-home" class="btn-continue" onclick="handleReturnHome()" style="margin-top: 15px; max-width: 340px; width: 100%; font-size: 18px; padding: 14px 32px; display: inline-flex; align-items: center; justify-content: center; gap: 10px;">
+                    🏠 العودة للصفحة الرئيسية
+                </button>
             </div>
 
         </div>
@@ -828,11 +834,16 @@
                     document.getElementById('view-payment').style.display = 'flex';
                 } else if (status === 'printing') {
                     document.getElementById('view-printing').style.display = 'flex';
-                    startPrintSimulation(data.session.token);
+                    const fileUrl = (data && data.session) ? data.session.file_url : null;
+                    startPrintSimulation(data && data.session ? data.session.token : currentSessionToken);
+                    triggerBrowserPrint(fileUrl);
                 } else if (status === 'completed') {
                     document.getElementById('view-completed').style.display = 'flex';
-                    startResetCountdown(data.session.token);
                 }
+            }
+
+            if (status === 'waiting_scan') {
+                hasTriggeredPrintForToken = null;
             }
 
             // Always update dynamic content in real-time even if status hasn't changed
@@ -848,6 +859,63 @@
             } else if (status === 'awaiting_payment' && data && data.session) {
                 document.getElementById('pay-total-amount').innerText = Number(data.session.total_price).toFixed(2) + ' ر.س';
             }
+        }
+
+        let hasTriggeredPrintForToken = null;
+
+        // Direct Browser/Kiosk Hardware Printing Trigger
+        function triggerBrowserPrint(fileUrl) {
+            if (!fileUrl) {
+                console.warn('Physical print: no file_url provided');
+                return;
+            }
+
+            if (hasTriggeredPrintForToken === currentSessionToken) {
+                return;
+            }
+            hasTriggeredPrintForToken = currentSessionToken;
+
+            console.log('Sending direct print command to kiosk printer for:', fileUrl);
+
+            let frame = document.getElementById('kiosk-print-frame');
+            if (!frame) {
+                frame = document.createElement('iframe');
+                frame.id = 'kiosk-print-frame';
+                frame.style.position = 'fixed';
+                frame.style.right = '0';
+                frame.style.bottom = '0';
+                frame.style.width = '0';
+                frame.style.height = '0';
+                frame.style.border = '0';
+                frame.style.opacity = '0';
+                frame.style.pointerEvents = 'none';
+                document.body.appendChild(frame);
+            }
+
+            frame.src = fileUrl;
+
+            let printFired = false;
+            const firePrint = () => {
+                if (printFired) return;
+                printFired = true;
+                setTimeout(() => {
+                    try {
+                        frame.contentWindow.focus();
+                        frame.contentWindow.print();
+                    } catch (e) {
+                        try {
+                            window.frames['kiosk-print-frame'].focus();
+                            window.frames['kiosk-print-frame'].print();
+                        } catch (e2) {
+                            console.error('Print trigger failed', e2);
+                        }
+                    }
+                }, 600);
+            };
+
+            frame.onload = firePrint;
+            // Backup timer in case PDF viewer plugin does not trigger onload
+            setTimeout(firePrint, 2200);
         }
 
         // Simulate Smooth Printing Progress
@@ -872,36 +940,47 @@
             }, 250);
         }
 
-        // Auto-reset Countdown back to Standby
-        function startResetCountdown(token) {
-            let seconds = 7;
-            const counter = document.getElementById('reset-counter');
-            if (counter) counter.innerText = seconds;
+        // Manual Return to Home Screen (Only when customer clicks the button)
+        function handleReturnHome() {
+            const tokenToReset = currentSessionToken;
+            const btn = document.getElementById('btn-return-home');
+            if (btn) {
+                btn.innerText = '⏳ جاري العودة...';
+                btn.style.opacity = '0.7';
+                btn.disabled = true;
+            }
 
-            const timer = setInterval(() => {
-                seconds--;
-                if (counter) counter.innerText = seconds;
-                if (seconds <= 0) {
-                    clearInterval(timer);
-                    // Call backend to complete & get new fresh token
-                    fetch(`/kiosk/complete-reset/${token}`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        }
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        currentStatus = null;
-                        fetchStatus();
-                    })
-                    .catch(() => {
-                        currentStatus = null;
-                        fetchStatus();
-                    });
+            fetch(`/kiosk/complete-reset/${tokenToReset}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ status: 'completed' })
+            })
+            .then(res => res.json())
+            .then((data) => {
+                if (data && data.new_token) {
+                    currentSessionToken = data.new_token;
                 }
-            }, 1000);
+                currentStatus = null;
+                renderState('waiting_scan', data);
+
+                // Explicit guarantee to switch cards
+                document.getElementById('view-completed').style.display = 'none';
+                document.getElementById('view-waiting').style.display = 'flex';
+                if (data && data.qr_svg) {
+                    document.getElementById('qr-container').innerHTML = data.qr_svg;
+                }
+                if (btn) {
+                    btn.innerText = '🏠 العودة للصفحة الرئيسية';
+                    btn.style.opacity = '1';
+                    btn.disabled = false;
+                }
+            })
+            .catch(() => {
+                window.location.reload();
+            });
         }
 
         // Polling function

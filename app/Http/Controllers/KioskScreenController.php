@@ -68,6 +68,8 @@ class KioskScreenController extends Controller
                 'token' => $session->session_token,
                 'status' => $session->status,
                 'file_name' => $session->file_name,
+                'file_path' => $session->file_path,
+                'file_url' => $session->file_path ? asset('storage/'.$session->file_path) : null,
                 'detected_page_count' => $session->detected_page_count,
                 'copies_count' => $session->copies_count,
                 'total_sheets' => $session->total_sheets,
@@ -328,9 +330,15 @@ class KioskScreenController extends Controller
             'expires_at' => now()->addMinutes(10),
         ]);
 
+        $connectUrl = request()->getSchemeAndHttpHost().'/kiosk-connect/'.$newSession->session_token;
+        $qrSvg = (string) QrCode::size(280)->errorCorrection('H')->margin(1)->generate($connectUrl);
+
         return response()->json([
             'success' => true,
             'new_token' => $newSession->session_token,
+            'status' => 'waiting_scan',
+            'qr_svg' => $qrSvg,
+            'connect_url' => $connectUrl,
         ]);
     }
 
@@ -359,13 +367,7 @@ class KioskScreenController extends Controller
 
         // 3. Find latest active non-expired session
         $session = KioskSession::where('kiosk_machine_id', $kiosk->id)
-            ->where(function ($q) {
-                $q->whereIn('status', ['waiting_scan', 'connected', 'file_uploaded', 'awaiting_payment', 'printing'])
-                    ->orWhere(function ($q2) {
-                        $q2->where('status', 'completed')
-                            ->where('completed_at', '>=', now()->subSeconds(15));
-                    });
-            })
+            ->whereIn('status', ['waiting_scan', 'connected', 'file_uploaded', 'awaiting_payment', 'printing'])
             ->where('expires_at', '>=', now())
             ->latest()
             ->first();
