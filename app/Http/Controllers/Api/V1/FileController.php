@@ -98,6 +98,7 @@ class FileController extends BaseApiController
                 'color_mode' => $colorMode,
                 'side_mode' => $sideMode,
                 'total_price' => $totalPrice,
+                'expires_at' => now()->addSeconds(90),
             ]);
         }
 
@@ -192,6 +193,7 @@ class FileController extends BaseApiController
                 'color_mode' => $colorMode,
                 'side_mode' => $sideMode,
                 'total_price' => $totalAmount,
+                'expires_at' => now()->addSeconds(90),
             ]);
         }
 

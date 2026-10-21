@@ -207,12 +207,13 @@ class KioskController extends BaseApiController
                 'session_token' => 'SESS-'.strtoupper(bin2hex(random_bytes(4))),
                 'status' => 'connected',
                 'connected_at' => now(),
-                'expires_at' => now()->addMinutes(10),
+                'expires_at' => now()->addSeconds(90),
             ]);
         } else {
             $session->update([
                 'status' => 'connected',
                 'connected_at' => now(),
+                'expires_at' => now()->addSeconds(90),
             ]);
         }
 
@@ -256,6 +257,7 @@ class KioskController extends BaseApiController
 
         $session->update([
             'status' => $request->status,
+            'expires_at' => now()->addSeconds(90),
         ]);
 
         return $this->success([
@@ -279,7 +281,7 @@ class KioskController extends BaseApiController
         }
 
         $session->update([
-            'expires_at' => now()->addMinutes(10),
+            'expires_at' => now()->addSeconds(90),
             'updated_at' => now(),
         ]);
 

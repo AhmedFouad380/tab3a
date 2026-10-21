@@ -714,7 +714,7 @@
             // Only monitor inactivity in active customer stages
             if (['connected', 'file_uploaded', 'awaiting_payment'].includes(currentStatus)) {
                 idleSeconds++;
-                if (idleSeconds >= 30 && !isTimeoutModalOpen) {
+                if (idleSeconds >= 60 && !isTimeoutModalOpen) {
                     showInactivityModal();
                 }
             } else {
