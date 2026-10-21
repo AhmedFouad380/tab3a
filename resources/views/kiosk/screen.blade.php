@@ -371,6 +371,132 @@
             font-size: 40px;
             animation: pulse 1.5s infinite;
         }
+
+        /* Inactivity Warning Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(4, 7, 15, 0.88);
+            backdrop-filter: blur(14px);
+            z-index: 9999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.25s ease;
+        }
+
+        .modal-card {
+            background: linear-gradient(145deg, #1e293b, #0f172a);
+            border: 2px solid #f59e0b;
+            box-shadow: 0 25px 60px rgba(245, 158, 11, 0.25), 0 0 40px rgba(0, 0, 0, 0.8);
+            border-radius: 28px;
+            padding: 36px 40px;
+            max-width: 580px;
+            width: 90%;
+            text-align: center;
+            position: relative;
+            animation: bounceIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .modal-icon-badge {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(245, 158, 11, 0.15);
+            border: 2px solid #f59e0b;
+            color: #f59e0b;
+            font-size: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            box-shadow: 0 0 25px rgba(245, 158, 11, 0.3);
+            animation: pulse 1.2s infinite;
+        }
+
+        .modal-title {
+            font-size: 26px;
+            font-weight: 900;
+            color: #fff;
+            margin-bottom: 12px;
+        }
+
+        .modal-description {
+            font-size: 16px;
+            color: #cbd5e1;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        .countdown-ring {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 18px;
+            font-weight: 800;
+            color: #fef08a;
+            background: rgba(245, 158, 11, 0.12);
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            padding: 10px 24px;
+            border-radius: 999px;
+            margin-bottom: 28px;
+        }
+
+        .countdown-number {
+            font-family: 'Outfit', sans-serif;
+            font-size: 28px;
+            font-weight: 900;
+            color: #f59e0b;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+        }
+
+        .btn-continue {
+            flex: 1;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #fff;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 14px;
+            font-size: 17px;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.35);
+            transition: all 0.2s ease;
+        }
+
+        .btn-continue:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px rgba(16, 185, 129, 0.5);
+        }
+
+        .btn-cancel {
+            background: rgba(255, 255, 255, 0.08);
+            color: #cbd5e1;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 14px 20px;
+            border-radius: 14px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-cancel:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: #ef4444;
+            color: #fca5a5;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
     </style>
 </head>
 <body>
@@ -537,12 +663,131 @@
         </div>
     </footer>
 
+    <!-- Inactivity Timeout Modal -->
+    <div id="inactivity-modal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-icon-badge">⏳</div>
+            <h2 class="modal-title">هل تريد المزيد من الوقت؟</h2>
+            <p class="modal-description">
+                لوحظ عدم وجود نشاط على الشاشة أو هاتفك. للحفاظ على خصوصية بياناتك وإتاحة الكشك للعميل التالي، ستنتهي الجلسة تلقائياً.
+            </p>
+            <div class="countdown-ring">
+                ⏳ متبقي <span id="inactivity-countdown" class="countdown-number">10</span> ثوانٍ للإلغاء
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn-continue" onclick="handleKeepAlive()">
+                    ✅ نعم، أحتاج وقتاً إضافياً
+                </button>
+                <button type="button" class="btn-cancel" onclick="handleTimeoutCancel()">
+                    ❌ إنهاء والعودة للرئيسية
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const machineCode = "{{ $kiosk->machine_code }}";
-        let currentStatus = "waiting_scan";
+        let currentStatus = null;
         let currentSessionToken = "{{ $session->session_token }}";
         let pollInterval = null;
         let printAnimationInterval = null;
+
+        // Inactivity Watcher (30s Idle Limit)
+        let idleSeconds = 0;
+        let isTimeoutModalOpen = false;
+        let modalCountdownInterval = null;
+
+        // Reset idle on user touch/click on screen
+        window.addEventListener('click', () => {
+            if (!isTimeoutModalOpen) {
+                idleSeconds = 0;
+            }
+        });
+        window.addEventListener('touchstart', () => {
+            if (!isTimeoutModalOpen) {
+                idleSeconds = 0;
+            }
+        });
+
+        // 1-second ticker for inactivity
+        setInterval(() => {
+            // Only monitor inactivity in active customer stages
+            if (['connected', 'file_uploaded', 'awaiting_payment'].includes(currentStatus)) {
+                idleSeconds++;
+                if (idleSeconds >= 30 && !isTimeoutModalOpen) {
+                    showInactivityModal();
+                }
+            } else {
+                idleSeconds = 0;
+                if (isTimeoutModalOpen) {
+                    hideInactivityModal();
+                }
+            }
+        }, 1000);
+
+        function showInactivityModal() {
+            isTimeoutModalOpen = true;
+            const modal = document.getElementById('inactivity-modal');
+            const countdownEl = document.getElementById('inactivity-countdown');
+            modal.style.display = 'flex';
+
+            let remainingSeconds = 10;
+            countdownEl.innerText = remainingSeconds;
+
+            clearInterval(modalCountdownInterval);
+            modalCountdownInterval = setInterval(() => {
+                remainingSeconds--;
+                countdownEl.innerText = remainingSeconds;
+                if (remainingSeconds <= 0) {
+                    clearInterval(modalCountdownInterval);
+                    handleTimeoutCancel();
+                }
+            }, 1000);
+        }
+
+        function hideInactivityModal() {
+            isTimeoutModalOpen = false;
+            clearInterval(modalCountdownInterval);
+            document.getElementById('inactivity-modal').style.display = 'none';
+        }
+
+        // Customer clicked: Yes, I need more time
+        function handleKeepAlive() {
+            hideInactivityModal();
+            idleSeconds = 0;
+
+            // Notify backend API
+            fetch('/api/v1/kiosks/extend-session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ session_token: currentSessionToken })
+            }).catch(err => console.log('Extend session ping error', err));
+        }
+
+        // Timeout expired or user clicked: Cancel & Return to QR
+        function handleTimeoutCancel() {
+            hideInactivityModal();
+            idleSeconds = 0;
+
+            fetch(`/kiosk/complete-reset/${currentSessionToken}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ status: 'cancelled' })
+            })
+            .then(res => res.json())
+            .then(() => {
+                fetchStatus();
+            })
+            .catch(() => {
+                fetchStatus();
+            });
+        }
 
         // Digital Clock
         function updateClock() {
@@ -556,41 +801,52 @@
 
         // Switch Screen State smoothly
         function renderState(status, data) {
-            if (status === currentStatus && status !== 'printing') return;
+            const statusChanged = (status !== currentStatus);
             currentStatus = status;
 
-            // Hide all views
-            document.getElementById('view-waiting').style.display = 'none';
-            document.getElementById('view-connected').style.display = 'none';
-            document.getElementById('view-uploaded').style.display = 'none';
-            document.getElementById('view-payment').style.display = 'none';
-            document.getElementById('view-printing').style.display = 'none';
-            document.getElementById('view-completed').style.display = 'none';
-
-            if (status === 'waiting_scan') {
-                document.getElementById('view-waiting').style.display = 'flex';
-                if (data && data.qr_svg) {
-                    document.getElementById('qr-container').innerHTML = data.qr_svg;
+            if (statusChanged) {
+                idleSeconds = 0;
+                if (isTimeoutModalOpen) {
+                    hideInactivityModal();
                 }
-            } else if (status === 'connected') {
-                document.getElementById('view-connected').style.display = 'flex';
-            } else if (status === 'file_uploaded') {
-                document.getElementById('view-uploaded').style.display = 'flex';
+
+                // Hide all views
+                document.getElementById('view-waiting').style.display = 'none';
+                document.getElementById('view-connected').style.display = 'none';
+                document.getElementById('view-uploaded').style.display = 'none';
+                document.getElementById('view-payment').style.display = 'none';
+                document.getElementById('view-printing').style.display = 'none';
+                document.getElementById('view-completed').style.display = 'none';
+
+                if (status === 'waiting_scan') {
+                    document.getElementById('view-waiting').style.display = 'flex';
+                } else if (status === 'connected') {
+                    document.getElementById('view-connected').style.display = 'flex';
+                } else if (status === 'file_uploaded') {
+                    document.getElementById('view-uploaded').style.display = 'flex';
+                } else if (status === 'awaiting_payment') {
+                    document.getElementById('view-payment').style.display = 'flex';
+                } else if (status === 'printing') {
+                    document.getElementById('view-printing').style.display = 'flex';
+                    startPrintSimulation(data.session.token);
+                } else if (status === 'completed') {
+                    document.getElementById('view-completed').style.display = 'flex';
+                    startResetCountdown(data.session.token);
+                }
+            }
+
+            // Always update dynamic content in real-time even if status hasn't changed
+            if (status === 'waiting_scan' && data && data.qr_svg) {
+                document.getElementById('qr-container').innerHTML = data.qr_svg;
+            } else if (status === 'file_uploaded' && data && data.session) {
                 document.getElementById('display-filename').innerText = data.session.file_name || 'document.pdf';
                 document.getElementById('info-pages').innerText = data.session.detected_page_count || 1;
                 document.getElementById('info-sheets').innerText = data.session.total_sheets || 1;
                 document.getElementById('info-mode').innerText = (data.session.color_mode === 'color' ? 'ملون' : 'أبيض وأسود') + 
                     (data.session.side_mode === 'double_sided' ? ' (وجهين)' : ' (وجه واحد)');
                 document.getElementById('display-price').innerText = Number(data.session.total_price).toFixed(2) + ' ر.س';
-            } else if (status === 'awaiting_payment') {
-                document.getElementById('view-payment').style.display = 'flex';
+            } else if (status === 'awaiting_payment' && data && data.session) {
                 document.getElementById('pay-total-amount').innerText = Number(data.session.total_price).toFixed(2) + ' ر.س';
-            } else if (status === 'printing') {
-                document.getElementById('view-printing').style.display = 'flex';
-                startPrintSimulation(data.session.token);
-            } else if (status === 'completed') {
-                document.getElementById('view-completed').style.display = 'flex';
-                startResetCountdown(data.session.token);
             }
         }
 
@@ -656,6 +912,12 @@
                     document.getElementById('toner-count').innerText = data.black_toner + '%';
                     
                     if (data.session) {
+                        if (currentSessionToken !== data.session.token || data.session.status !== currentStatus) {
+                            idleSeconds = 0;
+                            if (isTimeoutModalOpen) {
+                                hideInactivityModal();
+                            }
+                        }
                         currentSessionToken = data.session.token;
                         renderState(data.session.status, data);
                     }

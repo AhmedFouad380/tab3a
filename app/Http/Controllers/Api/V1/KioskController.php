@@ -263,4 +263,30 @@ class KioskController extends BaseApiController
             'status' => $session->status,
         ], $this->getLocale() === 'en' ? 'Kiosk screen status updated' : 'تم تحديث حالة شاشة الكشك بنجاح');
     }
+
+    /**
+     * Extend Kiosk Session (Keep-Alive / Reset Inactivity Timer)
+     */
+    public function extendSession(Request $request): JsonResponse
+    {
+        $request->validate([
+            'session_token' => 'required|string',
+        ]);
+
+        $session = KioskSession::where('session_token', $request->session_token)->first();
+        if (! $session) {
+            return $this->error($this->getLocale() === 'en' ? 'Session not found or expired' : 'جلسة الكشك غير موجودة أو منتهية', 404);
+        }
+
+        $session->update([
+            'expires_at' => now()->addMinutes(10),
+            'updated_at' => now(),
+        ]);
+
+        return $this->success([
+            'session_token' => $session->session_token,
+            'status' => $session->status,
+            'expires_at' => $session->expires_at?->toIso8601String(),
+        ], $this->getLocale() === 'en' ? 'Session extended successfully' : 'تم تمديد وقت الجلسة بنجاح');
+    }
 }

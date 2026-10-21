@@ -50,6 +50,7 @@ Route::prefix('v1')->group(function () {
     Route::post('/kiosks/verify-machine', [KioskController::class, 'verifyMachine']);
     Route::post('/kiosks/connect', [KioskController::class, 'connect']);
     Route::post('/kiosks/update-session-status', [KioskController::class, 'updateSessionStatus']);
+    Route::post('/kiosks/extend-session', [KioskController::class, 'extendSession']);
 
     // ==========================================
     // Protected Routes (Require Sanctum Auth)

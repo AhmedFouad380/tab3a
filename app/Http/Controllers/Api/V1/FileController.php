@@ -185,6 +185,7 @@ class FileController extends BaseApiController
             $newStatus = $request->boolean('is_checkout_step') ? 'awaiting_payment' : 'file_uploaded';
             $kioskSession->update([
                 'status' => $newStatus,
+                'detected_page_count' => $pagesToPrint,
                 'copies_count' => $copies,
                 'total_sheets' => $totalSheets,
                 'paper_size' => $paperSize,

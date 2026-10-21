@@ -219,20 +219,10 @@ class KioskInstantPrintingTest extends TestCase
         $session->refresh();
         $this->assertEquals('awaiting_payment', $session->status);
 
-        // 4. Mobile user completes checkout via /api/v1/orders/self-print/checkout
+        // 4. Mobile user completes checkout using ONLY session_token and payment_method
         $checkoutRes = $this->actingAs($user, 'sanctum')->postJson('/api/v1/orders/self-print/checkout', [
-            'kiosk_machine_id' => $kiosk->id,
-            'file_path' => $uploadRes->json('data.file_path'),
-            'original_file_name' => 'my_cv.png',
-            'file_extension' => 'png',
-            'file_size_bytes' => 1024,
-            'detected_page_count' => 1,
-            'copies_count' => 2,
-            'paper_size' => 'A4',
-            'color_mode' => 'black_and_white',
-            'side_mode' => 'single_sided',
-            'payment_method' => 'card',
             'session_token' => $sessionToken,
+            'payment_method' => 'card',
         ]);
         $checkoutRes->assertOk();
 
@@ -240,5 +230,40 @@ class KioskInstantPrintingTest extends TestCase
         $session->refresh();
         $this->assertEquals('printing', $session->status);
         $this->assertNotNull($session->order_id);
+    }
+
+    public function test_kiosk_extend_session_and_timeout_cancellation(): void
+    {
+        $kiosk = $this->setupKiosk();
+
+        // 1. Connect
+        $connectRes = $this->postJson('/api/v1/kiosks/connect', [
+            'machine_code' => $kiosk->machine_code,
+        ]);
+        $connectRes->assertOk();
+        $sessionToken = $connectRes->json('data.session_token');
+
+        // 2. Extend Session (Keep-Alive)
+        $extendRes = $this->postJson('/api/v1/kiosks/extend-session', [
+            'session_token' => $sessionToken,
+        ]);
+        $extendRes->assertOk();
+        $extendRes->assertJsonPath('success', true);
+        $extendRes->assertJsonPath('data.session_token', $sessionToken);
+
+        // 3. Inactive Timeout Cancellation (User idle > 30s + 10s modal countdown expired)
+        $resetRes = $this->postJson("/kiosk/complete-reset/{$sessionToken}", [
+            'status' => 'cancelled',
+        ]);
+        $resetRes->assertOk();
+        $resetRes->assertJsonStructure(['success', 'new_token']);
+
+        $oldSession = KioskSession::where('session_token', $sessionToken)->first();
+        $this->assertEquals('cancelled', $oldSession->status);
+
+        // A new fresh session is ready on the screen in waiting_scan state
+        $newSession = KioskSession::where('session_token', $resetRes->json('new_token'))->first();
+        $this->assertNotNull($newSession);
+        $this->assertEquals('waiting_scan', $newSession->status);
     }
 }

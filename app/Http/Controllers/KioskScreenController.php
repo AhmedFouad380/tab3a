@@ -26,19 +26,7 @@ class KioskScreenController extends Controller
             ->firstOrFail();
 
         // Get or create current active session
-        $session = KioskSession::where('kiosk_machine_id', $kiosk->id)
-            ->whereIn('status', ['waiting_scan', 'connected', 'file_uploaded', 'awaiting_payment', 'printing'])
-            ->latest()
-            ->first();
-
-        if (! $session) {
-            $session = KioskSession::create([
-                'kiosk_machine_id' => $kiosk->id,
-                'session_token' => 'SESS-'.strtoupper(bin2hex(random_bytes(4))),
-                'status' => 'waiting_scan',
-                'expires_at' => now()->addMinutes(10),
-            ]);
-        }
+        $session = $this->getActiveSession($kiosk);
 
         $connectUrl = request()->getSchemeAndHttpHost().'/kiosk-connect/'.$session->session_token;
 
@@ -63,19 +51,7 @@ class KioskScreenController extends Controller
         }
 
         // Get active session
-        $session = KioskSession::where('kiosk_machine_id', $kiosk->id)
-            ->whereIn('status', ['waiting_scan', 'connected', 'file_uploaded', 'awaiting_payment', 'printing', 'completed'])
-            ->latest()
-            ->first();
-
-        if (! $session) {
-            $session = KioskSession::create([
-                'kiosk_machine_id' => $kiosk->id,
-                'session_token' => 'SESS-'.strtoupper(bin2hex(random_bytes(4))),
-                'status' => 'waiting_scan',
-                'expires_at' => now()->addMinutes(10),
-            ]);
-        }
+        $session = $this->getActiveSession($kiosk);
 
         $connectUrl = request()->getSchemeAndHttpHost().'/kiosk-connect/'.$session->session_token;
         $qrSvg = (string) QrCode::size(280)->errorCorrection('H')->margin(1)->generate($connectUrl);
@@ -335,7 +311,14 @@ class KioskScreenController extends Controller
     public function completeAndReset(Request $request, string $token): JsonResponse
     {
         $session = KioskSession::where('session_token', $token)->firstOrFail();
-        $session->update(['status' => 'completed']);
+        $targetStatus = in_array($request->input('status'), ['completed', 'cancelled', 'expired'])
+            ? $request->input('status')
+            : 'completed';
+
+        $session->update([
+            'status' => $targetStatus,
+            'completed_at' => now(),
+        ]);
 
         // Create new standby session for the next customer
         $newSession = KioskSession::create([
@@ -349,5 +332,48 @@ class KioskScreenController extends Controller
             'success' => true,
             'new_token' => $newSession->session_token,
         ]);
+    }
+
+    /**
+     * Get or create a valid active session, expiring any old or stuck sessions
+     */
+    private function getActiveSession(KioskMachine $kiosk): KioskSession
+    {
+        // 1. Expire past sessions whose expires_at is in the past
+        KioskSession::where('kiosk_machine_id', $kiosk->id)
+            ->whereIn('status', ['waiting_scan', 'connected', 'file_uploaded', 'awaiting_payment', 'printing'])
+            ->where('expires_at', '<', now())
+            ->update([
+                'status' => 'expired',
+                'completed_at' => now(),
+            ]);
+
+        // 2. If a printing session was initiated more than 3 minutes ago, consider it completed
+        KioskSession::where('kiosk_machine_id', $kiosk->id)
+            ->where('status', 'printing')
+            ->where('updated_at', '<', now()->subMinutes(3))
+            ->update([
+                'status' => 'completed',
+                'completed_at' => now(),
+            ]);
+
+        // 3. Find latest active non-expired session
+        $session = KioskSession::where('kiosk_machine_id', $kiosk->id)
+            ->whereIn('status', ['waiting_scan', 'connected', 'file_uploaded', 'awaiting_payment', 'printing'])
+            ->where('expires_at', '>=', now())
+            ->latest()
+            ->first();
+
+        // 4. Create new fresh session if none exists
+        if (! $session) {
+            $session = KioskSession::create([
+                'kiosk_machine_id' => $kiosk->id,
+                'session_token' => 'SESS-'.strtoupper(bin2hex(random_bytes(4))),
+                'status' => 'waiting_scan',
+                'expires_at' => now()->addMinutes(10),
+            ]);
+        }
+
+        return $session;
     }
 }

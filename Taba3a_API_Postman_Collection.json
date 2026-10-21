@@ -981,6 +981,42 @@
 					}
 				},
 				{
+					"name": "Extend Kiosk Session (تمديد وقت الجلسة وإعادة ضبط مؤقت الخمول)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "ar"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"session_token\": \"SESS-XXXXXXXX\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/kiosks/extend-session",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"kiosks",
+								"extend-session"
+							]
+						},
+						"description": "إرسال نبض تمديد للجلسة (Heartbeat / Keep-Alive) لمنع إلغائها وإعادة ضبط مؤقت الخمول الـ 30 ثانية في شاشة الكشك."
+					}
+				},
+				{
 					"name": "Get Kiosk Screen Status (فحص حالة شاشة الكشك اللحظية - Polling)",
 					"request": {
 						"method": "GET",
@@ -1041,7 +1077,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"kiosk_machine_id\": 1,\n    \"session_token\": \"SESS-XXXXXXXX\",\n    \"file_path\": \"uploads/sample_lecture.pdf\",\n    \"original_file_name\": \"محاضرة_الفيزياء.pdf\",\n    \"file_extension\": \"pdf\",\n    \"file_size_bytes\": 4404019,\n    \"detected_page_count\": 8,\n    \"page_range_selection\": \"all\",\n    \"copies_count\": 1,\n    \"paper_size\": \"A4\",\n    \"color_mode\": \"black_and_white\",\n    \"side_mode\": \"single_sided\",\n    \"payment_method\": \"apple_pay\"\n}",
+							"raw": "{\n    \"session_token\": \"SESS-XXXXXXXX\",\n    \"payment_method\": \"apple_pay\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"

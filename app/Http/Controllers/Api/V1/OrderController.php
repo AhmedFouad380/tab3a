@@ -29,14 +29,35 @@ class OrderController extends BaseApiController
     public function createSelfPrintOrder(CreateSelfPrintOrderRequest $request): JsonResponse
     {
         $user = $request->user();
-        $kiosk = KioskMachine::findOrFail($request->kiosk_machine_id);
 
-        $pagesToPrint = (int) $request->detected_page_count;
-        $copies = (int) $request->copies_count;
-        $sideMode = $request->side_mode;
-        $paperSize = $request->paper_size;
-        $colorMode = $request->color_mode;
+        // 1. Resolve data from KioskSession if session_token is provided
+        $session = null;
+        if ($request->filled('session_token')) {
+            $session = KioskSession::where('session_token', $request->session_token)->firstOrFail();
+            $kiosk = $session->kiosk;
+            $filePath = $request->input('file_path', $session->file_path);
+            $originalFileName = $request->input('original_file_name', $session->file_name);
+            $fileExtension = $request->input('file_extension', pathinfo($originalFileName ?? '', PATHINFO_EXTENSION) ?: 'pdf');
+            $fileSizeBytes = (int) $request->input('file_size_bytes', $session->file_size_bytes ?: 0);
+            $detectedPageCount = (int) $request->input('detected_page_count', $session->detected_page_count ?: 1);
+            $copies = (int) $request->input('copies_count', $session->copies_count ?: 1);
+            $paperSize = $request->input('paper_size', $session->paper_size ?: 'A4');
+            $colorMode = $request->input('color_mode', $session->color_mode ?: 'black_and_white');
+            $sideMode = $request->input('side_mode', $session->side_mode ?: 'single_sided');
+        } else {
+            $kiosk = KioskMachine::findOrFail($request->kiosk_machine_id);
+            $filePath = $request->file_path;
+            $originalFileName = $request->original_file_name;
+            $fileExtension = $request->input('file_extension', pathinfo($originalFileName ?? '', PATHINFO_EXTENSION) ?: 'pdf');
+            $fileSizeBytes = (int) $request->input('file_size_bytes', 0);
+            $detectedPageCount = (int) $request->detected_page_count;
+            $copies = (int) ($request->copies_count ?: 1);
+            $paperSize = $request->input('paper_size', 'A4');
+            $colorMode = $request->input('color_mode', 'black_and_white');
+            $sideMode = $request->input('side_mode', 'single_sided');
+        }
 
+        $pagesToPrint = $detectedPageCount;
         if ($request->filled('page_range_selection') && $request->page_range_selection !== 'all') {
             $range = $request->page_range_selection;
             if (str_contains($range, '-')) {
@@ -72,7 +93,7 @@ class OrderController extends BaseApiController
 
         // 3. فحص الحد الأقصى لحجم الملف
         $maxFileSizeMb = $kiosk->getEffectiveMaxFileSizeMb();
-        if ($request->filled('file_size_bytes') && ($request->file_size_bytes > $maxFileSizeMb * 1024 * 1024)) {
+        if ($fileSizeBytes > 0 && ($fileSizeBytes > $maxFileSizeMb * 1024 * 1024)) {
             return $this->error(
                 $this->getLocale() === 'en'
                     ? "File size exceeds the maximum allowed for instant printing ({$maxFileSizeMb} MB)."
@@ -105,7 +126,7 @@ class OrderController extends BaseApiController
             return $this->error($errMsg, 400);
         }
 
-        return DB::transaction(function () use ($request, $user, $kiosk, $pagesToPrint, $copies, $sideMode, $paperSize, $colorMode, $totalSheets, $unitPrice, $subtotal, $taxAmount, $totalAmount) {
+        return DB::transaction(function () use ($request, $user, $kiosk, $session, $originalFileName, $filePath, $fileExtension, $fileSizeBytes, $detectedPageCount, $pagesToPrint, $copies, $sideMode, $paperSize, $colorMode, $totalSheets, $unitPrice, $subtotal, $taxAmount, $totalAmount) {
             $orderNumber = 'TAB-'.date('Ymd').'-'.strtoupper(bin2hex(random_bytes(3)));
 
             $order = Order::create([
@@ -126,11 +147,11 @@ class OrderController extends BaseApiController
 
             OrderItem::create([
                 'order_id' => $order->id,
-                'original_file_name' => $request->original_file_name,
-                'file_path' => $request->file_path,
-                'file_extension' => $request->file_extension,
-                'file_size_bytes' => $request->file_size_bytes,
-                'detected_page_count' => $request->detected_page_count,
+                'original_file_name' => $originalFileName,
+                'file_path' => $filePath,
+                'file_extension' => $fileExtension,
+                'file_size_bytes' => $fileSizeBytes,
+                'detected_page_count' => $detectedPageCount,
                 'pages_to_print_count' => $pagesToPrint,
                 'page_range_selection' => $request->page_range_selection ?? 'all',
                 'paper_size' => $paperSize,
@@ -154,14 +175,15 @@ class OrderController extends BaseApiController
             ]);
 
             // Sync with Kiosk Screen: Update status to 'printing'
-            $session = null;
-            if ($request->filled('session_token')) {
-                $session = KioskSession::where('session_token', $request->session_token)->first();
-            } else {
-                $session = KioskSession::where('kiosk_machine_id', $kiosk->id)
-                    ->whereIn('status', ['waiting_scan', 'connected', 'file_uploaded', 'awaiting_payment'])
-                    ->latest()
-                    ->first();
+            if (! $session) {
+                if ($request->filled('session_token')) {
+                    $session = KioskSession::where('session_token', $request->session_token)->first();
+                } else {
+                    $session = KioskSession::where('kiosk_machine_id', $kiosk->id)
+                        ->whereIn('status', ['waiting_scan', 'connected', 'file_uploaded', 'awaiting_payment'])
+                        ->latest()
+                        ->first();
+                }
             }
 
             if ($session) {
