@@ -646,7 +646,7 @@
                     🛡️ حفاظاً على خصوصيتك، تم حذف الملف تلقائياً من خوادمنا.
                 </div>
                 <div class="stat-item" style="font-size: 16px; color: #a7f3d0;">
-                    ⏳ ستعود الشاشة لوضع الاستعداد خلال <strong id="reset-counter" style="margin: 0 4px; font-size: 20px;">5</strong> ثوانٍ
+                    ⏳ ستعود الشاشة لوضع الاستعداد خلال <strong id="reset-counter" style="margin: 0 4px; font-size: 20px;">7</strong> ثوانٍ
                 </div>
             </div>
 
@@ -874,13 +874,13 @@
 
         // Auto-reset Countdown back to Standby
         function startResetCountdown(token) {
-            let seconds = 5;
+            let seconds = 7;
             const counter = document.getElementById('reset-counter');
-            counter.innerText = seconds;
+            if (counter) counter.innerText = seconds;
 
             const timer = setInterval(() => {
                 seconds--;
-                counter.innerText = seconds;
+                if (counter) counter.innerText = seconds;
                 if (seconds <= 0) {
                     clearInterval(timer);
                     // Call backend to complete & get new fresh token
@@ -893,9 +893,11 @@
                     })
                     .then(res => res.json())
                     .then(data => {
+                        currentStatus = null;
                         fetchStatus();
                     })
                     .catch(() => {
+                        currentStatus = null;
                         fetchStatus();
                     });
                 }
@@ -904,9 +906,19 @@
 
         // Polling function
         function fetchStatus() {
+            // While customer is viewing the completion screen, do not allow polling to overwrite it
+            if (currentStatus === 'completed') {
+                return;
+            }
+
             fetch(`/api/kiosks/${machineCode}/screen-status`)
                 .then(res => res.json())
                 .then(data => {
+                    // Check again if completion animation started while request was in-flight
+                    if (currentStatus === 'completed') {
+                        return;
+                    }
+
                     // Update header supplies
                     document.getElementById('paper-count').innerText = data.paper_a4;
                     document.getElementById('toner-count').innerText = data.black_toner + '%';

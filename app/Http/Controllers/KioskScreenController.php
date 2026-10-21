@@ -359,7 +359,13 @@ class KioskScreenController extends Controller
 
         // 3. Find latest active non-expired session
         $session = KioskSession::where('kiosk_machine_id', $kiosk->id)
-            ->whereIn('status', ['waiting_scan', 'connected', 'file_uploaded', 'awaiting_payment', 'printing'])
+            ->where(function ($q) {
+                $q->whereIn('status', ['waiting_scan', 'connected', 'file_uploaded', 'awaiting_payment', 'printing'])
+                    ->orWhere(function ($q2) {
+                        $q2->where('status', 'completed')
+                            ->where('completed_at', '>=', now()->subSeconds(15));
+                    });
+            })
             ->where('expires_at', '>=', now())
             ->latest()
             ->first();
