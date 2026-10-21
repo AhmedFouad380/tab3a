@@ -46,8 +46,10 @@ Route::prefix('v1')->group(function () {
     Route::post('/files/upload-and-inspect', [FileController::class, 'uploadAndInspect']);
     Route::post('/files/calculate-price', [FileController::class, 'calculatePrice']);
 
-    // 5. Kiosk Verification & Pre-Print Health Check
+    // 5. Kiosk Verification, Screen Connect & Real-time State Sync
     Route::post('/kiosks/verify-machine', [KioskController::class, 'verifyMachine']);
+    Route::post('/kiosks/connect', [KioskController::class, 'connect']);
+    Route::post('/kiosks/update-session-status', [KioskController::class, 'updateSessionStatus']);
 
     // ==========================================
     // Protected Routes (Require Sanctum Auth)

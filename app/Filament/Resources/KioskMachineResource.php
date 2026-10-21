@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\KioskMachineResource\Pages;
 use App\Models\KioskMachine;
+use App\Models\SystemSetting;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -15,9 +16,13 @@ class KioskMachineResource extends Resource
     protected static ?string $model = KioskMachine::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-printer';
+
     protected static ?string $navigationGroup = '🖨️ إدارة العمليات والطباعة';
+
     protected static ?string $modelLabel = 'ماكينة طباعة ذاتية';
+
     protected static ?string $pluralModelLabel = 'ماكينات الطباعة الذاتية (Kiosks)';
+
     protected static ?int $navigationSort = 2;
 
     public static function form(Form $form): Form
@@ -45,7 +50,7 @@ class KioskMachineResource extends Resource
                             ->required(),
                         Forms\Components\TextInput::make('qr_token')
                             ->label('رمز الـ QR Token')
-                            ->default(fn () => 'QR-' . strtoupper(bin2hex(random_bytes(4))))
+                            ->default(fn () => 'QR-'.strtoupper(bin2hex(random_bytes(4))))
                             ->required(),
                         Forms\Components\TextInput::make('nfc_tag_id')
                             ->label('معرف الـ NFC Tag ID')
@@ -115,6 +120,27 @@ class KioskMachineResource extends Resource
                             ->default(100)
                             ->suffix('%'),
                     ]),
+
+                Forms\Components\Section::make('محددات وقيود الطباعة الفورية للماكينة')
+                    ->description('اترك الحقول فارغة لتطبيق الإعدادات العامة للنظام تلقائياً')
+                    ->columns(3)
+                    ->schema([
+                        Forms\Components\TextInput::make('max_file_size_mb')
+                            ->label('الحد الأقصى لحجم الملف')
+                            ->numeric()
+                            ->placeholder(fn () => SystemSetting::where('key', 'instant_print_max_file_size')->first()?->value['ar'] ?? '30')
+                            ->suffix('ميجابايت'),
+                        Forms\Components\TextInput::make('min_order_price')
+                            ->label('الحد الأدنى لقيمة العملية')
+                            ->numeric()
+                            ->placeholder(fn () => SystemSetting::where('key', 'instant_print_min_order_price')->first()?->value['ar'] ?? '2.00')
+                            ->suffix('ريال'),
+                        Forms\Components\TextInput::make('max_sheets_per_job')
+                            ->label('أقصى عدد أوراق للعملية')
+                            ->numeric()
+                            ->placeholder(fn () => SystemSetting::where('key', 'instant_print_max_sheets')->first()?->value['ar'] ?? '100')
+                            ->suffix('ورقة'),
+                    ]),
             ]);
     }
 
@@ -165,8 +191,29 @@ class KioskMachineResource extends Resource
                     ]),
             ])
             ->actions([
+                Tables\Actions\Action::make('open_screen')
+                    ->label('شاشة الكشك')
+                    ->icon('heroicon-o-computer-desktop')
+                    ->color('info')
+                    ->url(fn (KioskMachine $record): string => route('kiosk.screen', $record->machine_code))
+                    ->openUrlInNewTab(),
+
+                Tables\Actions\Action::make('print_sticker')
+                    ->label('ملصق الطابعة')
+                    ->icon('heroicon-o-printer')
+                    ->color('warning')
+                    ->url(fn (KioskMachine $record): string => route('kiosk.sticker', $record->id))
+                    ->openUrlInNewTab(),
+
+                Tables\Actions\Action::make('download_qr')
+                    ->label('تنزيل QR')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->color('gray')
+                    ->url(fn (KioskMachine $record): string => route('kiosk.qr.download', $record->id))
+                    ->openUrlInNewTab(),
+
                 Tables\Actions\Action::make('refill_paper')
-                    ->label('إعادة تعبئة الورق')
+                    ->label('تعبئة ورق')
                     ->icon('heroicon-o-arrow-path')
                     ->color('success')
                     ->requiresConfirmation()

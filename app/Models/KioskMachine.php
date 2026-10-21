@@ -34,6 +34,9 @@ class KioskMachine extends Model
         'magenta_toner_level',
         'yellow_toner_level',
         'is_toner_low',
+        'max_file_size_mb',
+        'min_order_price',
+        'max_sheets_per_job',
     ];
 
     protected function casts(): array
@@ -50,12 +53,69 @@ class KioskMachine extends Model
             'last_ping_at' => 'datetime',
             'latitude' => 'decimal:8',
             'longitude' => 'decimal:8',
+            'max_file_size_mb' => 'integer',
+            'min_order_price' => 'decimal:2',
+            'max_sheets_per_job' => 'integer',
         ];
     }
 
     public function branch()
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    public function sessions()
+    {
+        return $this->hasMany(KioskSession::class);
+    }
+
+    public function activeSession()
+    {
+        return $this->hasOne(KioskSession::class)
+            ->whereIn('status', ['waiting_scan', 'connected', 'file_uploaded', 'awaiting_payment', 'printing'])
+            ->latestOfMany();
+    }
+
+    /**
+     * Get effective maximum file size in MB (machine-specific or system default)
+     */
+    public function getEffectiveMaxFileSizeMb(): int
+    {
+        if ($this->max_file_size_mb && $this->max_file_size_mb > 0) {
+            return (int) $this->max_file_size_mb;
+        }
+
+        $globalSetting = SystemSetting::where('key', 'instant_print_max_file_size')->first();
+
+        return (int) ($globalSetting?->value['ar'] ?? 30);
+    }
+
+    /**
+     * Get effective minimum order price in SAR (machine-specific or system default)
+     */
+    public function getEffectiveMinOrderPrice(): float
+    {
+        if ($this->min_order_price && $this->min_order_price > 0) {
+            return (float) $this->min_order_price;
+        }
+
+        $globalSetting = SystemSetting::where('key', 'instant_print_min_order_price')->first();
+
+        return (float) ($globalSetting?->value['ar'] ?? 2.00);
+    }
+
+    /**
+     * Get effective maximum sheets per job (machine-specific or system default)
+     */
+    public function getEffectiveMaxSheets(): int
+    {
+        if ($this->max_sheets_per_job && $this->max_sheets_per_job > 0) {
+            return (int) $this->max_sheets_per_job;
+        }
+
+        $globalSetting = SystemSetting::where('key', 'instant_print_max_sheets')->first();
+
+        return (int) ($globalSetting?->value['ar'] ?? 100);
     }
 
     public function orders()

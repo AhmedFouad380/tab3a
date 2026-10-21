@@ -17,6 +17,9 @@ class PriceCalculationRequest extends BaseApiRequest
             'paper_type' => 'nullable|string',
             'finishing_option_id' => 'nullable|exists:finishing_options,id',
             'is_teacher' => 'nullable|boolean',
+            'session_token' => 'nullable|string',
+            'kiosk_machine_id' => 'nullable|exists:kiosk_machines,id',
+            'is_checkout_step' => 'nullable|boolean',
         ];
     }
 }

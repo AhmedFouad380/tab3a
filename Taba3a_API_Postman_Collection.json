@@ -743,7 +743,38 @@
 								{
 									"key": "file",
 									"type": "file",
-									"src": []
+									"src": [],
+									"description": "ملف المستند (PDF أو صورة JPG/PNG)"
+								},
+								{
+									"key": "session_token",
+									"value": "SESS-XXXXXXXX",
+									"type": "text",
+									"description": "اختياري: توكن جلسة الكشك لتحديث شاشة العرض فوراً بحالة تم رفع الملف"
+								},
+								{
+									"key": "kiosk_machine_id",
+									"value": "1",
+									"type": "text",
+									"description": "اختياري: معرف الماكينة في حال عدم توفر session_token"
+								},
+								{
+									"key": "copies",
+									"value": "1",
+									"type": "text",
+									"description": "عدد النسخ (افتراضي 1)"
+								},
+								{
+									"key": "color_mode",
+									"value": "black_and_white",
+									"type": "text",
+									"description": "نمط الألوان: black_and_white أو color"
+								},
+								{
+									"key": "side_mode",
+									"value": "single_sided",
+									"type": "text",
+									"description": "نمط الطباعة: single_sided أو double_sided"
 								}
 							]
 						},
@@ -757,7 +788,7 @@
 								"upload-and-inspect"
 							]
 						},
-						"description": "رفع ملف PDF أو صورة (بحد أقصى 50MB) وقراءة عدد الصفحات آلياً."
+						"description": "رفع ملف المستند وقراءة عدد الصفحات آلياً، مع إمكانية تمرير session_token لتحديث شاشة الكشك فورياً ببيانات الملف والسعر."
 					}
 				},
 				{
@@ -786,7 +817,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"service_type\": \"self_printing\",\n    \"detected_page_count\": 8,\n    \"page_range_selection\": \"all\",\n    \"copies_count\": 1,\n    \"paper_size\": \"A4\",\n    \"color_mode\": \"black_and_white\",\n    \"side_mode\": \"single_sided\",\n    \"finishing_option_id\": null\n}",
+							"raw": "{\n    \"service_type\": \"self_printing\",\n    \"detected_page_count\": 8,\n    \"page_range_selection\": \"all\",\n    \"copies_count\": 1,\n    \"paper_size\": \"A4\",\n    \"color_mode\": \"black_and_white\",\n    \"side_mode\": \"single_sided\",\n    \"finishing_option_id\": null,\n    \"session_token\": \"SESS-XXXXXXXX\",\n    \"is_checkout_step\": false\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -803,16 +834,16 @@
 								"calculate-price"
 							]
 						},
-						"description": "حساب التكلفة التقديرية، عدد الورق المطلوب، وضريبة القيمة المضافة 15%."
+						"description": "حساب التكلفة التقديرية، عدد الورق، والضريبة 15%، وتطبيق الحد الأدنى للسعر. إذا تم تمرير is_checkout_step: true يتم تحويل شاشة الكشك لحالة awaiting_payment."
 					}
 				}
 			]
 		},
 		{
-			"name": "5. 🤖 Kiosk Verification & Pre-Check (فحص الماكينة الذاتية)",
+			"name": "5. 🤖 Kiosk Verification, Screen Connect & Real-time Sync (ماكينات الكشك وشاشات العرض)",
 			"item": [
 				{
-					"name": "Verify Kiosk Machine (فحص جاهزية الماكينة عبر QR أو NFC)",
+					"name": "Connect to Kiosk Screen (ربط الجوال بشاشة الكشك عبر QR أو كود الماكينة)",
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -837,7 +868,53 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"qr_token\": \"QR-TB-101-RYD\",\n    \"total_sheets_needed\": 8,\n    \"paper_size\": \"A4\",\n    \"color_mode\": \"black_and_white\",\n    \"side_mode\": \"single_sided\"\n}",
+							"raw": "{\n    \"machine_code\": \"KSK-202\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/kiosks/connect",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"kiosks",
+								"connect"
+							]
+						},
+						"description": "ربط تطبيق الجوال بالماكينة عند مسح الـ QR. يحول شاشة الكشك فوراً لحالة (connected)، ويعيد توكن الجلسة session_token ومحددات الطباعة (أقصى حجم، أقل سعر، أقصى أوراق)."
+					}
+				},
+				{
+					"name": "Verify Kiosk Machine (فحص جاهزية الماكينة وسعة الورق)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "ar"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"machine_code\": \"KSK-202\",\n    \"session_token\": \"SESS-XXXXXXXX\",\n    \"total_sheets_needed\": 8,\n    \"paper_size\": \"A4\",\n    \"color_mode\": \"black_and_white\",\n    \"side_mode\": \"single_sided\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -854,7 +931,83 @@
 								"verify-machine"
 							]
 						},
-						"description": "فحص الماكينة قبل الطباعة: الاتصال، توفر الورق، مستويات الحبر، وتوافق الإعدادات."
+						"description": "فحص الماكينة قبل الطباعة: الاتصال، توفر رصيد الورق بالدرج، مستويات الحبر، وتوافق الإعدادات ومحددات الطباعة."
+					}
+				},
+				{
+					"name": "Update Kiosk Session Status (تحديث حالة شاشة الكشك يدوياً)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "ar"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"session_token\": \"SESS-XXXXXXXX\",\n    \"status\": \"awaiting_payment\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/kiosks/update-session-status",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"kiosks",
+								"update-session-status"
+							]
+						},
+						"description": "تحديث حالة شاشة الكشك يدوياً من التطبيق إلى: connected, file_uploaded, awaiting_payment, printing, completed, cancelled."
+					}
+				},
+				{
+					"name": "Get Kiosk Screen Status (فحص حالة شاشة الكشك اللحظية - Polling)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "http://127.0.0.1:8000/api/kiosks/KSK-202/screen-status",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"kiosks",
+								"KSK-202",
+								"screen-status"
+							]
+						},
+						"description": "فحص دوري لحظي لحالة الشاشة والجلسة ومستوى الورق والحبر والـ QR code (تستخدمه شاشة العرض للمزامنة الفورية)."
 					}
 				}
 			]
@@ -888,7 +1041,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"kiosk_machine_id\": 1,\n    \"file_path\": \"uploads/sample_lecture.pdf\",\n    \"original_file_name\": \"محاضرة_الفيزياء.pdf\",\n    \"file_extension\": \"pdf\",\n    \"file_size_bytes\": 4404019,\n    \"detected_page_count\": 8,\n    \"page_range_selection\": \"all\",\n    \"copies_count\": 1,\n    \"paper_size\": \"A4\",\n    \"color_mode\": \"black_and_white\",\n    \"side_mode\": \"single_sided\",\n    \"payment_method\": \"apple_pay\"\n}",
+							"raw": "{\n    \"kiosk_machine_id\": 1,\n    \"session_token\": \"SESS-XXXXXXXX\",\n    \"file_path\": \"uploads/sample_lecture.pdf\",\n    \"original_file_name\": \"محاضرة_الفيزياء.pdf\",\n    \"file_extension\": \"pdf\",\n    \"file_size_bytes\": 4404019,\n    \"detected_page_count\": 8,\n    \"page_range_selection\": \"all\",\n    \"copies_count\": 1,\n    \"paper_size\": \"A4\",\n    \"color_mode\": \"black_and_white\",\n    \"side_mode\": \"single_sided\",\n    \"payment_method\": \"apple_pay\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -906,7 +1059,7 @@
 								"checkout"
 							]
 						},
-						"description": "تأكيد الدفع وخصم الورق وإرسال أمر الطباعة الفوري للماكينة."
+						"description": "تأكيد الدفع وخصم رصيد الورق من الماكينة آلياً، وتحويل شاشة الكشك فوراً لحالة جاري الطباعة (printing) مع شريط التقدم ثم اكتمال العملية (completed)."
 					}
 				},
 				{

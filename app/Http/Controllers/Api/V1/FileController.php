@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\BaseApiController;
 use App\Http\Requests\Api\V1\FileUploadRequest;
 use App\Http\Requests\Api\V1\PriceCalculationRequest;
 use App\Models\FinishingOption;
+use App\Models\KioskSession;
 use App\Models\PricingRule;
 use Illuminate\Http\JsonResponse;
 use Smalot\PdfParser\Parser;
@@ -25,14 +26,14 @@ class FileController extends BaseApiController
 
         // Store file
         $path = $uploadedFile->store('uploads', 'public');
-        $fullPath = storage_path('app/public/' . $path);
+        $fullPath = storage_path('app/public/'.$path);
 
         $detectedPageCount = 1;
 
         // Auto-detect PDF pages count
         if ($extension === 'pdf') {
             try {
-                $parser = new Parser();
+                $parser = new Parser;
                 $pdf = $parser->parseFile($fullPath);
                 $pages = $pdf->getPages();
                 $detectedPageCount = count($pages) ?: 1;
@@ -40,7 +41,7 @@ class FileController extends BaseApiController
                 $fp = @fopen($fullPath, 'r');
                 $count = 0;
                 if ($fp) {
-                    while (!feof($fp)) {
+                    while (! feof($fp)) {
                         $line = fgets($fp, 255);
                         if (preg_match('/\/Count\s+(\d+)/', $line, $matches)) {
                             $count = (int) $matches[1];
@@ -53,18 +54,67 @@ class FileController extends BaseApiController
             }
         }
 
+        // Sync with Kiosk Screen if kiosk session or machine ID is provided
+        $kioskSession = null;
+        if ($request->filled('session_token')) {
+            $kioskSession = KioskSession::where('session_token', $request->session_token)->first();
+        } elseif ($request->filled('kiosk_machine_id')) {
+            $kioskSession = KioskSession::where('kiosk_machine_id', $request->kiosk_machine_id)
+                ->whereIn('status', ['waiting_scan', 'connected', 'file_uploaded', 'awaiting_payment'])
+                ->latest()
+                ->first();
+        }
+
+        if ($kioskSession) {
+            $copies = (int) ($request->copies ?? 1);
+            $colorMode = $request->color_mode ?? 'black_and_white';
+            $sideMode = $request->side_mode ?? 'single_sided';
+            $sheetsPerCopy = $sideMode === 'double_sided' ? (int) ceil($detectedPageCount / 2) : $detectedPageCount;
+            $totalSheets = $sheetsPerCopy * $copies;
+
+            $rule = PricingRule::where('paper_size', 'A4')
+                ->where('color_mode', $colorMode)
+                ->where('side_mode', $sideMode)
+                ->where('is_active', true)
+                ->first();
+
+            $unitPrice = $rule ? (float) $rule->price_per_page : ($colorMode === 'color' ? 1.50 : 0.50);
+            $subtotal = ($unitPrice * $detectedPageCount) * $copies;
+
+            $minPrice = $kioskSession->kiosk->getEffectiveMinOrderPrice();
+            if ($subtotal < $minPrice) {
+                $subtotal = $minPrice;
+            }
+            $totalPrice = round($subtotal * 1.15, 2);
+
+            $kioskSession->update([
+                'status' => 'file_uploaded',
+                'file_name' => $originalName,
+                'file_path' => $path,
+                'file_size_bytes' => $fileSizeBytes,
+                'detected_page_count' => $detectedPageCount,
+                'copies_count' => $copies,
+                'total_sheets' => $totalSheets,
+                'color_mode' => $colorMode,
+                'side_mode' => $sideMode,
+                'total_price' => $totalPrice,
+            ]);
+        }
+
         $message = $this->getLocale() === 'en'
             ? 'File uploaded and inspected successfully'
             : 'تم رفع الملف وقراءة عدد الصفحات بنجاح';
 
         return $this->success([
             'file_path' => $path,
-            'file_url' => asset('storage/' . $path),
+            'file_url' => asset('storage/'.$path),
             'original_file_name' => $originalName,
             'file_extension' => $extension,
             'file_size_bytes' => $fileSizeBytes,
-            'file_size_formatted' => $fileSizeMb . ' MB',
+            'file_size_formatted' => $fileSizeMb.' MB',
             'detected_page_count' => $detectedPageCount,
+            'kiosk_session_token' => $kioskSession?->session_token,
+            'kiosk_screen_updated' => $kioskSession !== null,
         ], $message);
     }
 
@@ -120,6 +170,30 @@ class FileController extends BaseApiController
         $taxAmount = round($subtotal * $taxRate, 2);
         $totalAmount = round($subtotal + $taxAmount, 2);
 
+        // Sync with Kiosk Screen if session or machine is provided
+        $kioskSession = null;
+        if ($request->filled('session_token')) {
+            $kioskSession = KioskSession::where('session_token', $request->session_token)->first();
+        } elseif ($request->filled('kiosk_machine_id')) {
+            $kioskSession = KioskSession::where('kiosk_machine_id', $request->kiosk_machine_id)
+                ->whereIn('status', ['waiting_scan', 'connected', 'file_uploaded', 'awaiting_payment'])
+                ->latest()
+                ->first();
+        }
+
+        if ($kioskSession) {
+            $newStatus = $request->boolean('is_checkout_step') ? 'awaiting_payment' : 'file_uploaded';
+            $kioskSession->update([
+                'status' => $newStatus,
+                'copies_count' => $copies,
+                'total_sheets' => $totalSheets,
+                'paper_size' => $paperSize,
+                'color_mode' => $colorMode,
+                'side_mode' => $sideMode,
+                'total_price' => $totalAmount,
+            ]);
+        }
+
         return $this->success([
             'pages_to_print_count' => $pagesToPrint,
             'copies_count' => $copies,
@@ -134,6 +208,8 @@ class FileController extends BaseApiController
             'total_amount' => $totalAmount,
             'currency' => 'SAR',
             'is_teacher' => $request->boolean('is_teacher'),
+            'kiosk_session_token' => $kioskSession?->session_token,
+            'kiosk_screen_status' => $kioskSession?->status,
         ]);
     }
 }

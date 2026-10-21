@@ -8,6 +8,7 @@ use App\Http\Requests\Api\V1\CreateSelfPrintOrderRequest;
 use App\Http\Resources\Api\V1\OrderResource;
 use App\Models\FinishingOption;
 use App\Models\KioskMachine;
+use App\Models\KioskSession;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderStatusHistory;
@@ -40,12 +41,45 @@ class OrderController extends BaseApiController
             $range = $request->page_range_selection;
             if (str_contains($range, '-')) {
                 $parts = explode('-', $range);
-                $pagesToPrint = max(1, ((int)$parts[1] - (int)$parts[0] + 1));
+                $pagesToPrint = max(1, ((int) $parts[1] - (int) $parts[0] + 1));
             }
         }
 
         $sheetsPerCopy = $sideMode === 'double_sided' ? (int) ceil($pagesToPrint / 2) : $pagesToPrint;
         $totalSheets = $sheetsPerCopy * $copies;
+
+        // 1. فحص الحد الأقصى لعدد الأوراق المسموح به للطباعة الفورية
+        $maxAllowedSheets = $kiosk->getEffectiveMaxSheets();
+        if ($totalSheets > $maxAllowedSheets) {
+            return $this->error(
+                $this->getLocale() === 'en'
+                    ? "The order exceeds the maximum sheets allowed for instant printing ({$maxAllowedSheets} sheets). Please use pre-order for larger jobs."
+                    : "يتجاوز الطلب الحد الأقصى للأوراق المسموح به في الطباعة الفورية ({$maxAllowedSheets} ورقة). فضلاً استخدم خدمة الطلب المسبق للكميات الكبيرة.",
+                422
+            );
+        }
+
+        // 2. فحص رصيد الورق الفعلي المتاح في درج الماكينة
+        $availableInTray = $paperSize === 'A3' ? $kiosk->paper_tray_a3_sheets : $kiosk->paper_tray_a4_sheets;
+        if ($totalSheets > $availableInTray) {
+            return $this->error(
+                $this->getLocale() === 'en'
+                    ? "The machine does not have enough {$paperSize} paper ({$availableInTray} sheets available, required: {$totalSheets})."
+                    : "الماكينة لا تحتوي على ورق كافٍ حالياً ({$availableInTray} ورقة متاحة، والمطلوب {$totalSheets} ورقة).",
+                422
+            );
+        }
+
+        // 3. فحص الحد الأقصى لحجم الملف
+        $maxFileSizeMb = $kiosk->getEffectiveMaxFileSizeMb();
+        if ($request->filled('file_size_bytes') && ($request->file_size_bytes > $maxFileSizeMb * 1024 * 1024)) {
+            return $this->error(
+                $this->getLocale() === 'en'
+                    ? "File size exceeds the maximum allowed for instant printing ({$maxFileSizeMb} MB)."
+                    : "حجم الملف يتجاوز الحد الأقصى المسموح به للطباعة الفورية ({$maxFileSizeMb} ميجابايت).",
+                422
+            );
+        }
 
         $rule = PricingRule::where('paper_size', $paperSize)
             ->where('color_mode', $colorMode)
@@ -55,16 +89,24 @@ class OrderController extends BaseApiController
 
         $unitPrice = $rule ? (float) $rule->price_per_page : ($colorMode === 'color' ? 1.50 : 0.50);
         $subtotal = ($unitPrice * $pagesToPrint) * $copies;
+
+        // 4. تطبيق الحد الأدنى لسعر العملية (Minimum Order Price)
+        $minOrderPrice = $kiosk->getEffectiveMinOrderPrice();
+        if ($subtotal < $minOrderPrice) {
+            $subtotal = $minOrderPrice;
+        }
+
         $taxAmount = round($subtotal * 0.15, 2);
         $totalAmount = round($subtotal + $taxAmount, 2);
 
         if ($request->payment_method === 'wallet' && $user->wallet_balance < $totalAmount) {
             $errMsg = $this->getLocale() === 'en' ? 'Insufficient wallet balance' : 'رصيد المحفظة غير كافٍ لإتمام عملية الطباعة';
+
             return $this->error($errMsg, 400);
         }
 
         return DB::transaction(function () use ($request, $user, $kiosk, $pagesToPrint, $copies, $sideMode, $paperSize, $colorMode, $totalSheets, $unitPrice, $subtotal, $taxAmount, $totalAmount) {
-            $orderNumber = 'TAB-' . date('Ymd') . '-' . strtoupper(bin2hex(random_bytes(3)));
+            $orderNumber = 'TAB-'.date('Ymd').'-'.strtoupper(bin2hex(random_bytes(3)));
 
             $order = Order::create([
                 'order_number' => $orderNumber,
@@ -79,7 +121,7 @@ class OrderController extends BaseApiController
                 'subtotal' => $subtotal,
                 'tax_amount' => $taxAmount,
                 'total_amount' => $totalAmount,
-                'printer_job_id' => 'JOB-' . uniqid(),
+                'printer_job_id' => 'JOB-'.uniqid(),
             ]);
 
             OrderItem::create([
@@ -106,6 +148,30 @@ class OrderController extends BaseApiController
                 $kiosk->decrement('paper_tray_a4_sheets', min($kiosk->paper_tray_a4_sheets, $totalSheets));
             }
 
+            $kiosk->update([
+                'is_paper_low' => $kiosk->paper_tray_a4_sheets < 50,
+                'is_paper_empty' => $kiosk->paper_tray_a4_sheets == 0,
+            ]);
+
+            // Sync with Kiosk Screen: Update status to 'printing'
+            $session = null;
+            if ($request->filled('session_token')) {
+                $session = KioskSession::where('session_token', $request->session_token)->first();
+            } else {
+                $session = KioskSession::where('kiosk_machine_id', $kiosk->id)
+                    ->whereIn('status', ['waiting_scan', 'connected', 'file_uploaded', 'awaiting_payment'])
+                    ->latest()
+                    ->first();
+            }
+
+            if ($session) {
+                $session->update([
+                    'status' => 'printing',
+                    'order_id' => $order->id,
+                    'completed_at' => now(),
+                ]);
+            }
+
             if ($request->payment_method === 'wallet') {
                 $before = $user->wallet_balance;
                 $user->decrement('wallet_balance', $totalAmount);
@@ -127,7 +193,7 @@ class OrderController extends BaseApiController
             Payment::create([
                 'order_id' => $order->id,
                 'user_id' => $user->id,
-                'transaction_id' => 'TXN-' . strtoupper(uniqid()),
+                'transaction_id' => 'TXN-'.strtoupper(uniqid()),
                 'gateway' => $request->payment_method,
                 'amount' => $totalAmount,
                 'currency' => 'SAR',
@@ -170,7 +236,7 @@ class OrderController extends BaseApiController
             $range = $request->page_range_selection;
             if (str_contains($range, '-')) {
                 $parts = explode('-', $range);
-                $pagesToPrint = max(1, ((int)$parts[1] - (int)$parts[0] + 1));
+                $pagesToPrint = max(1, ((int) $parts[1] - (int) $parts[0] + 1));
             }
         }
 
@@ -200,11 +266,12 @@ class OrderController extends BaseApiController
 
         if ($request->payment_method === 'wallet' && $user->wallet_balance < $totalAmount) {
             $errMsg = $this->getLocale() === 'en' ? 'Insufficient wallet balance' : 'رصيد المحفظة غير كافٍ لإتمام الطلب';
+
             return $this->error($errMsg, 400);
         }
 
         return DB::transaction(function () use ($request, $user, $pagesToPrint, $copies, $sideMode, $paperSize, $colorMode, $totalSheets, $unitPrice, $finishingPrice, $subtotal, $taxAmount, $totalAmount) {
-            $orderNumber = 'TAB-' . date('Ymd') . '-' . strtoupper(bin2hex(random_bytes(3)));
+            $orderNumber = 'TAB-'.date('Ymd').'-'.strtoupper(bin2hex(random_bytes(3)));
 
             $order = Order::create([
                 'order_number' => $orderNumber,
@@ -263,7 +330,7 @@ class OrderController extends BaseApiController
             Payment::create([
                 'order_id' => $order->id,
                 'user_id' => $user->id,
-                'transaction_id' => 'TXN-' . strtoupper(uniqid()),
+                'transaction_id' => 'TXN-'.strtoupper(uniqid()),
                 'gateway' => $request->payment_method,
                 'amount' => $totalAmount,
                 'currency' => 'SAR',
@@ -324,7 +391,7 @@ class OrderController extends BaseApiController
             ->where('user_id', $user->id)
             ->find($id);
 
-        if (!$order) {
+        if (! $order) {
             return $this->error($this->getLocale() === 'en' ? 'Order not found' : 'الطلب غير موجود', 404);
         }
 
@@ -339,7 +406,7 @@ class OrderController extends BaseApiController
         $user = $request->user();
         $order = Order::where('user_id', $user->id)->find($id);
 
-        if (!$order) {
+        if (! $order) {
             return $this->error($this->getLocale() === 'en' ? 'Order not found' : 'الطلب غير موجود', 404);
         }
 
@@ -387,7 +454,7 @@ class OrderController extends BaseApiController
         $user = $request->user();
         $order = Order::with('items')->where('user_id', $user->id)->find($id);
 
-        if (!$order) {
+        if (! $order) {
             return $this->error($this->getLocale() === 'en' ? 'Order not found' : 'الطلب غير موجود', 404);
         }
 
@@ -398,16 +465,17 @@ class OrderController extends BaseApiController
 
         if ($items->count() === 1) {
             $item = $items->first();
-            if (!$item->file_path || !Storage::disk('public')->exists($item->file_path)) {
+            if (! $item->file_path || ! Storage::disk('public')->exists($item->file_path)) {
                 return $this->error($this->getLocale() === 'en' ? 'File not found on server' : 'الملف غير موجود على السيرفر', 404);
             }
+
             return Storage::disk('public')->download($item->file_path, $item->original_file_name ?: basename($item->file_path));
         }
 
         $zipFileName = "order_{$order->order_number}_files.zip";
         $tempPath = tempnam(sys_get_temp_dir(), 'order_zip_');
 
-        $zip = new ZipArchive();
+        $zip = new ZipArchive;
         if ($zip->open($tempPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
             return $this->error($this->getLocale() === 'en' ? 'Failed to create zip' : 'فشل إنشاء الملف المضغوط', 500);
         }
@@ -415,7 +483,7 @@ class OrderController extends BaseApiController
         $added = 0;
         foreach ($items as $idx => $item) {
             if ($item->file_path && Storage::disk('public')->exists($item->file_path)) {
-                $zip->addFile(Storage::disk('public')->path($item->file_path), ($idx + 1) . '_' . ($item->original_file_name ?: basename($item->file_path)));
+                $zip->addFile(Storage::disk('public')->path($item->file_path), ($idx + 1).'_'.($item->original_file_name ?: basename($item->file_path)));
                 $added++;
             }
         }
@@ -423,6 +491,7 @@ class OrderController extends BaseApiController
 
         if ($added === 0) {
             @unlink($tempPath);
+
             return $this->error($this->getLocale() === 'en' ? 'Files not found on server' : 'الملفات غير موجودة على السيرفر', 404);
         }
 
@@ -437,12 +506,12 @@ class OrderController extends BaseApiController
         $user = $request->user();
         $order = Order::where('user_id', $user->id)->find($orderId);
 
-        if (!$order) {
+        if (! $order) {
             return $this->error($this->getLocale() === 'en' ? 'Order not found' : 'الطلب غير موجود', 404);
         }
 
         $item = $order->items()->find($itemId);
-        if (!$item || !$item->file_path || !Storage::disk('public')->exists($item->file_path)) {
+        if (! $item || ! $item->file_path || ! Storage::disk('public')->exists($item->file_path)) {
             return $this->error($this->getLocale() === 'en' ? 'File not found on server' : 'الملف غير موجود على السيرفر', 404);
         }
 
