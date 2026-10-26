@@ -28,12 +28,12 @@ class KioskScreenController extends Controller
         // Get or create current active session
         $session = $this->getActiveSession($kiosk);
 
-        $connectUrl = request()->getSchemeAndHttpHost().'/kiosk-connect/'.$session->session_token;
+        $connectUrl = request()->getSchemeAndHttpHost().'/kiosk-connect/'.$kiosk->machine_code;
 
         $qrSvg = QrCode::size(280)
             ->errorCorrection('H')
             ->margin(1)
-            ->generate($connectUrl);
+            ->generate($kiosk->machine_code);
 
         $appName = SystemSetting::where('key', 'app_name')->first()?->value['ar'] ?? 'منصة طباعة';
 
@@ -53,8 +53,8 @@ class KioskScreenController extends Controller
         // Get active session
         $session = $this->getActiveSession($kiosk);
 
-        $connectUrl = request()->getSchemeAndHttpHost().'/kiosk-connect/'.$session->session_token;
-        $qrSvg = (string) QrCode::size(280)->errorCorrection('H')->margin(1)->generate($connectUrl);
+        $connectUrl = request()->getSchemeAndHttpHost().'/kiosk-connect/'.$kiosk->machine_code;
+        $qrSvg = (string) QrCode::size(280)->errorCorrection('H')->margin(1)->generate($kiosk->machine_code);
 
         return response()->json([
             'machine_code' => $kiosk->machine_code,
