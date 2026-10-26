@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\PricingRuleResource\Pages;
 
 use App\Filament\Resources\PricingRuleResource;
-use Filament\Actions;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreatePricingRule extends CreateRecord

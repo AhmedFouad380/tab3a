@@ -15,9 +15,13 @@ class KioskMaintenanceAlertResource extends Resource
     protected static ?string $model = KioskMaintenanceAlert::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-exclamation-triangle';
+
     protected static ?string $navigationGroup = '🖨️ إدارة العمليات والطباعة';
+
     protected static ?string $modelLabel = 'تنبيه صيانة ماكينة';
+
     protected static ?string $pluralModelLabel = 'تنبيهات الماكينات والأعطال';
+
     protected static ?int $navigationSort = 3;
 
     public static function form(Form $form): Form

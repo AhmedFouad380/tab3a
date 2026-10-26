@@ -28,7 +28,7 @@ return new class extends Migration
             $table->boolean('supports_color')->default(true);
             $table->boolean('supports_duplex')->default(true);
             $table->json('supported_paper_sizes')->nullable(); // ["A4", "A3"]
-            
+
             // Paper Levels
             $table->integer('paper_tray_a4_sheets')->default(500); // Current sheet count available
             $table->integer('paper_tray_a3_sheets')->default(0);

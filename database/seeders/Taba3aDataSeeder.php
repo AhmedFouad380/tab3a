@@ -211,7 +211,7 @@ class Taba3aDataSeeder extends Seeder
 
         // 7. Orders
         $order1 = Order::create([
-            'order_number' => 'TAB-' . date('Ymd') . '-001',
+            'order_number' => 'TAB-'.date('Ymd').'-001',
             'user_id' => $user1->id,
             'order_type' => 'self_printing',
             'kiosk_machine_id' => $kiosk1->id,
@@ -242,7 +242,7 @@ class Taba3aDataSeeder extends Seeder
         ]);
 
         $order2 = Order::create([
-            'order_number' => 'TAB-' . date('Ymd') . '-002',
+            'order_number' => 'TAB-'.date('Ymd').'-002',
             'user_id' => $user2->id,
             'order_type' => 'pre_order',
             'branch_id' => $branch1->id,

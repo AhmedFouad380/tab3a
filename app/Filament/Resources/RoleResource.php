@@ -15,9 +15,13 @@ class RoleResource extends Resource
     protected static ?string $model = Role::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-key';
+
     protected static ?string $navigationGroup = '👥 المستخدمين وفريق العمل';
+
     protected static ?string $modelLabel = 'دور وصلاحية';
+
     protected static ?string $pluralModelLabel = 'الأدوار والصلاحيات';
+
     protected static ?int $navigationSort = 2;
 
     public static function form(Form $form): Form
@@ -64,7 +68,7 @@ class RoleResource extends Resource
                                 titleAttribute: 'name',
                                 modifyQueryUsing: fn ($query) => $query->where('guard_name', 'admin')
                             )
-                            ->getOptionLabelFromRecordUsing(fn ($record) => ($permissionLabels[$record->name] ?? $record->name) . " ({$record->name})")
+                            ->getOptionLabelFromRecordUsing(fn ($record) => ($permissionLabels[$record->name] ?? $record->name)." ({$record->name})")
                             ->columns(2)
                             ->bulkToggleable()
                             ->columnSpanFull(),

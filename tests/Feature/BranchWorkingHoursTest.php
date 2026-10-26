@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Admin;
 use App\Models\Branch;
 use App\Models\BranchWorkingHour;
 use Carbon\Carbon;

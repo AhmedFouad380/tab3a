@@ -15,9 +15,13 @@ class FinishingOptionResource extends Resource
     protected static ?string $model = FinishingOption::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-scissors';
+
     protected static ?string $navigationGroup = '🏢 الفروع والتسعير';
+
     protected static ?string $modelLabel = 'خيار تجليد/تشطيب';
+
     protected static ?string $pluralModelLabel = 'خيارات التجليد والتشطيب';
+
     protected static ?int $navigationSort = 3;
 
     public static function form(Form $form): Form

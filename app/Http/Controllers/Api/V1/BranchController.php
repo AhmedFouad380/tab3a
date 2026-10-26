@@ -50,7 +50,7 @@ class BranchController extends BaseApiController
     {
         $branch = Branch::with('workingHours')->where('is_active', true)->find($id);
 
-        if (!$branch) {
+        if (! $branch) {
             return $this->error($this->getLocale() === 'en' ? 'Branch not found' : 'الفرع غير موجود', 404);
         }
 

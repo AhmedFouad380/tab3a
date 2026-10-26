@@ -43,7 +43,7 @@ class NotificationController extends BaseApiController
         $user = $request->user();
         $notification = AppNotification::where('user_id', $user->id)->find($id);
 
-        if (!$notification) {
+        if (! $notification) {
             return $this->error($this->getLocale() === 'en' ? 'Notification not found' : 'الإشعار غير موجود', 404);
         }
 

@@ -67,15 +67,15 @@ class Branch extends Model
         foreach ($schedules as $schedule) {
             $days = (array) ($schedule['days'] ?? []);
             $isDayOff = (bool) ($schedule['is_day_off'] ?? false);
-            $opening = !$isDayOff && !empty($schedule['opening_time'])
-                ? (strlen($schedule['opening_time']) === 5 ? $schedule['opening_time'] . ':00' : $schedule['opening_time'])
+            $opening = ! $isDayOff && ! empty($schedule['opening_time'])
+                ? (strlen($schedule['opening_time']) === 5 ? $schedule['opening_time'].':00' : $schedule['opening_time'])
                 : '00:00:00';
-            $closing = !$isDayOff && !empty($schedule['closing_time'])
-                ? (strlen($schedule['closing_time']) === 5 ? $schedule['closing_time'] . ':00' : $schedule['closing_time'])
+            $closing = ! $isDayOff && ! empty($schedule['closing_time'])
+                ? (strlen($schedule['closing_time']) === 5 ? $schedule['closing_time'].':00' : $schedule['closing_time'])
                 : '00:00:00';
 
             foreach ($days as $day) {
-                if (!in_array($day, $allDays) || in_array($day, $processedDays)) {
+                if (! in_array($day, $allDays) || in_array($day, $processedDays)) {
                     continue;
                 }
 
@@ -126,9 +126,9 @@ class Branch extends Model
         foreach ($hours as $wh) {
             $open = substr($wh->opening_time, 0, 5);
             $close = substr($wh->closing_time, 0, 5);
-            $key = ($wh->is_day_off ? '1' : '0') . "_{$open}_{$close}";
+            $key = ($wh->is_day_off ? '1' : '0')."_{$open}_{$close}";
 
-            if (!isset($grouped[$key])) {
+            if (! isset($grouped[$key])) {
                 $grouped[$key] = [
                     'days' => [],
                     'opening_time' => $open,
@@ -168,8 +168,9 @@ class Branch extends Model
             $days = array_map(fn ($d) => $daysMap[$d] ?? $d, $schedule['days'] ?? []);
             $daysStr = implode('، ', $days);
 
-            if (!empty($schedule['is_day_off'])) {
+            if (! empty($schedule['is_day_off'])) {
                 $summaries[] = "مغلق ({$daysStr})";
+
                 continue;
             }
 
@@ -194,7 +195,7 @@ class Branch extends Model
 
         $todayHour = $this->workingHours()->where('day_of_week', $today)->first();
 
-        if (!$todayHour || $todayHour->is_day_off) {
+        if (! $todayHour || $todayHour->is_day_off) {
             return false;
         }
 

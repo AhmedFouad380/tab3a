@@ -15,9 +15,13 @@ class PricingRuleResource extends Resource
     protected static ?string $model = PricingRule::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-currency-dollar';
+
     protected static ?string $navigationGroup = '🏢 الفروع والتسعير';
+
     protected static ?string $modelLabel = 'قاعدة تسعير';
+
     protected static ?string $pluralModelLabel = 'قواعد تسعير الطباعة';
+
     protected static ?int $navigationSort = 2;
 
     public static function form(Form $form): Form

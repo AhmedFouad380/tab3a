@@ -15,9 +15,13 @@ class BranchResource extends Resource
     protected static ?string $model = Branch::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-building-storefront';
+
     protected static ?string $navigationGroup = '🏢 الفروع والتسعير';
+
     protected static ?string $modelLabel = 'فرع';
+
     protected static ?string $pluralModelLabel = 'الفروع';
+
     protected static ?int $navigationSort = 1;
 
     public static function form(Form $form): Form
@@ -109,15 +113,15 @@ class BranchResource extends Resource
                                     ->label('وقت بدء العمل (من)')
                                     ->seconds(false)
                                     ->default('08:00')
-                                    ->required(fn (Forms\Get $get) => !$get('is_day_off'))
-                                    ->visible(fn (Forms\Get $get) => !$get('is_day_off')),
+                                    ->required(fn (Forms\Get $get) => ! $get('is_day_off'))
+                                    ->visible(fn (Forms\Get $get) => ! $get('is_day_off')),
 
                                 Forms\Components\TimePicker::make('closing_time')
                                     ->label('وقت انتهاء العمل (إلى)')
                                     ->seconds(false)
                                     ->default('22:00')
-                                    ->required(fn (Forms\Get $get) => !$get('is_day_off'))
-                                    ->visible(fn (Forms\Get $get) => !$get('is_day_off')),
+                                    ->required(fn (Forms\Get $get) => ! $get('is_day_off'))
+                                    ->visible(fn (Forms\Get $get) => ! $get('is_day_off')),
 
                                 Forms\Components\Toggle::make('is_day_off')
                                     ->label('عطلة / مغلق في هذه الأيام')
@@ -154,12 +158,12 @@ class BranchResource extends Resource
                                 $dayNames = array_map(fn ($d) => $daysMap[$d] ?? $d, $days);
                                 $daysStr = implode('، ', $dayNames);
 
-                                if (!empty($state['is_day_off'])) {
+                                if (! empty($state['is_day_off'])) {
                                     return "🚫 عطلة رسمية: {$daysStr}";
                                 }
 
-                                $from = !empty($state['opening_time']) ? substr($state['opening_time'], 0, 5) : '--:--';
-                                $to = !empty($state['closing_time']) ? substr($state['closing_time'], 0, 5) : '--:--';
+                                $from = ! empty($state['opening_time']) ? substr($state['opening_time'], 0, 5) : '--:--';
+                                $to = ! empty($state['closing_time']) ? substr($state['closing_time'], 0, 5) : '--:--';
 
                                 return "🕒 من {$from} إلى {$to} ({$daysStr})";
                             }),

@@ -8,11 +8,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Spatie\Permission\Models\Role;
 use Spatie\Permission\Traits\HasRoles;
 
 class Admin extends Authenticatable implements FilamentUser
 {
-    use HasFactory, Notifiable, SoftDeletes, HasRoles;
+    use HasFactory, HasRoles, Notifiable, SoftDeletes;
 
     protected string $guard_name = 'admin';
 
@@ -48,8 +49,8 @@ class Admin extends Authenticatable implements FilamentUser
     protected static function booted(): void
     {
         static::saved(function (Admin $admin) {
-            if ($admin->role && !$admin->hasRole($admin->role)) {
-                $role = \Spatie\Permission\Models\Role::firstOrCreate([
+            if ($admin->role && ! $admin->hasRole($admin->role)) {
+                $role = Role::firstOrCreate([
                     'name' => $admin->role,
                     'guard_name' => 'admin',
                 ]);

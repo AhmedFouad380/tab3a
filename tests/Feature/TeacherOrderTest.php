@@ -81,7 +81,7 @@ class TeacherOrderTest extends TestCase
 
         $token = $user->createToken('test_token')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/v1/orders/self-print/checkout', [
                 'kiosk_machine_id' => $kiosk->id,
                 'file_path' => 'orders/files/test.pdf',
@@ -133,7 +133,7 @@ class TeacherOrderTest extends TestCase
 
         $token = $user->createToken('test_token')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/v1/orders/pre-order/checkout', [
                 'branch_id' => $branch->id,
                 'scheduled_pickup_at' => now()->addHours(3)->toDateTimeString(),

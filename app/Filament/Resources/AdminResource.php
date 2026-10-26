@@ -16,9 +16,13 @@ class AdminResource extends Resource
     protected static ?string $model = Admin::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-shield-check';
+
     protected static ?string $navigationGroup = '👥 المستخدمين وفريق العمل';
+
     protected static ?string $modelLabel = 'مشرف / موظف';
+
     protected static ?string $pluralModelLabel = 'المدراء وفريق العمل';
+
     protected static ?int $navigationSort = 1;
 
     public static function form(Form $form): Form

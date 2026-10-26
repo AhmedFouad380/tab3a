@@ -31,13 +31,14 @@ class AuthController extends BaseApiController
             $errMsg = $this->getLocale() === 'en'
                 ? 'Phone number is already registered, please log in'
                 : 'رقم الهاتف مسجل بالفعل، يرجى تسجيل الدخول';
+
             return $this->error($errMsg, 422);
         }
 
         $isCompany = $request->boolean('is_company');
         $taxNumber = $isCompany ? $request->tax_number : null;
 
-        if (!$existingUser) {
+        if (! $existingUser) {
             $existingUser = User::create([
                 'name' => $request->name,
                 'phone' => $phone,
@@ -91,10 +92,11 @@ class AuthController extends BaseApiController
             ->latest()
             ->first();
 
-        if (!$otp && !(config('app.debug') && $request->otp_code === '1234')) {
+        if (! $otp && ! (config('app.debug') && $request->otp_code === '1234')) {
             $errMsg = $this->getLocale() === 'en'
                 ? 'Invalid or expired verification code'
                 : 'رمز التحقق غير صحيح أو منتهي الصلاحية';
+
             return $this->error($errMsg, 400);
         }
 
@@ -103,8 +105,9 @@ class AuthController extends BaseApiController
         }
 
         $user = User::where('phone', $request->phone)->first();
-        if (!$user) {
+        if (! $user) {
             $errMsg = $this->getLocale() === 'en' ? 'User not found' : 'المستخدم غير موجود';
+
             return $this->error($errMsg, 404);
         }
 
@@ -131,10 +134,11 @@ class AuthController extends BaseApiController
         $phone = $request->phone;
         $user = User::where('phone', $phone)->first();
 
-        if (!$user) {
+        if (! $user) {
             $errMsg = $this->getLocale() === 'en'
                 ? 'User not found, please create an account'
                 : 'المستخدم غير موجود، يرجى إنشاء حساب جديد';
+
             return $this->error($errMsg, 404);
         }
 
@@ -142,6 +146,7 @@ class AuthController extends BaseApiController
             $errMsg = $this->getLocale() === 'en'
                 ? 'Account is suspended'
                 : 'هذا الحساب محظور، يرجى التواصل مع الإدارة';
+
             return $this->error($errMsg, 403);
         }
 
@@ -181,10 +186,11 @@ class AuthController extends BaseApiController
             ->latest()
             ->first();
 
-        if (!$otp && !(config('app.debug') && $request->otp_code === '1234')) {
+        if (! $otp && ! (config('app.debug') && $request->otp_code === '1234')) {
             $errMsg = $this->getLocale() === 'en'
                 ? 'Invalid or expired verification code'
                 : 'رمز التحقق غير صحيح أو منتهي الصلاحية';
+
             return $this->error($errMsg, 400);
         }
 
@@ -193,8 +199,9 @@ class AuthController extends BaseApiController
         }
 
         $user = User::where('phone', $request->phone)->first();
-        if (!$user) {
+        if (! $user) {
             $errMsg = $this->getLocale() === 'en' ? 'User not found' : 'المستخدم غير موجود';
+
             return $this->error($errMsg, 404);
         }
 
@@ -227,10 +234,11 @@ class AuthController extends BaseApiController
 
         if ($type === 'login') {
             $user = User::where('phone', $phone)->first();
-            if (!$user) {
+            if (! $user) {
                 $errMsg = $this->getLocale() === 'en'
                     ? 'User not found, please create an account'
                     : 'المستخدم غير موجود، يرجى إنشاء حساب جديد';
+
                 return $this->error($errMsg, 404);
             }
             if ($user->status === 'blocked') {
@@ -300,10 +308,11 @@ class AuthController extends BaseApiController
             ->latest()
             ->first();
 
-        if (!$otp && !(config('app.debug') && $request->otp_code === '1234')) {
+        if (! $otp && ! (config('app.debug') && $request->otp_code === '1234')) {
             $errMsg = $this->getLocale() === 'en'
                 ? 'Invalid or expired verification code'
                 : 'رمز التحقق غير صحيح أو منتهي الصلاحية';
+
             return $this->error($errMsg, 400);
         }
 
@@ -314,7 +323,7 @@ class AuthController extends BaseApiController
         $user = User::where('phone', $request->phone)->first();
         $isNewUser = false;
 
-        if (!$user) {
+        if (! $user) {
             $user = User::create([
                 'phone' => $request->phone,
                 'phone_verified_at' => now(),
@@ -376,6 +385,7 @@ class AuthController extends BaseApiController
     public function getProfile(Request $request): JsonResponse
     {
         $user = $request->user()->loadCount('orders');
+
         return $this->success(new UserResource($user));
     }
 
@@ -428,7 +438,7 @@ class AuthController extends BaseApiController
     {
         $request->user()->currentAccessToken()->delete();
         $message = $this->getLocale() === 'en' ? 'Logged out successfully' : 'تم تسجيل الخروج بنجاح';
+
         return $this->success(null, $message);
     }
 }
-

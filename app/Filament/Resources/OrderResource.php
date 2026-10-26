@@ -17,9 +17,13 @@ class OrderResource extends Resource
     protected static ?string $model = Order::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-shopping-bag';
+
     protected static ?string $navigationGroup = '🖨️ إدارة العمليات والطباعة';
+
     protected static ?string $modelLabel = 'طلب طباعة';
+
     protected static ?string $pluralModelLabel = 'طلبات الطباعة';
+
     protected static ?int $navigationSort = 1;
 
     public static function form(Form $form): Form
@@ -283,7 +287,7 @@ class OrderResource extends Resource
                     ->visible(fn (Order $record) => $record->order_type === 'pre_order' && in_array($record->status, ['pending', 'processing', 'printing']))
                     ->action(function (Order $record) {
                         $record->update(['status' => 'ready_for_pickup']);
-                        
+
                         // إرسال إشعار للعميل
                         AppNotification::create([
                             'user_id' => $record->user_id,

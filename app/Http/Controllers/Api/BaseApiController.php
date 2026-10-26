@@ -18,7 +18,7 @@ class BaseApiController extends Controller
             'data' => $data,
         ];
 
-        if (!empty($meta)) {
+        if (! empty($meta)) {
             $response['meta'] = $meta;
         }
 
@@ -35,7 +35,7 @@ class BaseApiController extends Controller
             'message' => $message,
         ];
 
-        if (!is_null($errors)) {
+        if (! is_null($errors)) {
             $response['errors'] = $errors;
         }
 
@@ -57,6 +57,7 @@ class BaseApiController extends Controller
     {
         if (is_array($attribute)) {
             $locale = $this->getLocale();
+
             return $attribute[$locale] ?? $attribute['ar'] ?? $attribute['en'] ?? '';
         }
 

@@ -13,11 +13,11 @@ return new class extends Migration
             $table->string('order_number')->unique();
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
             $table->enum('order_type', ['self_printing', 'pre_order']);
-            
+
             // Locations & Execution Targets
             $table->foreignId('branch_id')->nullable()->constrained('branches')->nullOnDelete();
             $table->foreignId('kiosk_machine_id')->nullable()->constrained('kiosk_machines')->nullOnDelete();
-            
+
             // Scheduling for Pre-Orders
             $table->dateTime('scheduled_pickup_at')->nullable();
             $table->dateTime('actual_pickup_at')->nullable();

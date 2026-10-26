@@ -25,8 +25,8 @@ class HomeController extends BaseApiController
         $locale = $this->getLocale();
 
         $greeting = $locale === 'en'
-            ? 'Good evening' . ($user && $user->name ? ', ' . $user->name : '')
-            : 'مساء الخير' . ($user && $user->name ? ' ، ' . $user->name : '');
+            ? 'Good evening'.($user && $user->name ? ', '.$user->name : '')
+            : 'مساء الخير'.($user && $user->name ? ' ، '.$user->name : '');
 
         $subGreeting = $locale === 'en'
             ? 'What would you like to print today?'
@@ -59,7 +59,7 @@ class HomeController extends BaseApiController
             'user' => $user ? [
                 'id' => $user->id,
                 'name' => $user->name,
-                'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : null,
+                'avatar' => $user->avatar ? asset('storage/'.$user->avatar) : null,
                 'wallet_balance' => (float) $user->wallet_balance,
             ] : null,
             'services' => $services,
@@ -91,7 +91,7 @@ class HomeController extends BaseApiController
 
         if ($request->filled('slug')) {
             $page = $query->where('slug', $request->slug)->first();
-            if (!$page) {
+            if (! $page) {
                 return $this->error($this->getLocale() === 'en' ? 'Page not found' : 'الصفحة غير موجودة', 404);
             }
 
@@ -99,6 +99,7 @@ class HomeController extends BaseApiController
         }
 
         $pages = $query->get();
+
         return $this->success(StaticPageResource::collection($pages));
     }
 
@@ -114,6 +115,7 @@ class HomeController extends BaseApiController
         }
 
         $faqs = $query->get();
+
         return $this->success(FaqResource::collection($faqs));
     }
 

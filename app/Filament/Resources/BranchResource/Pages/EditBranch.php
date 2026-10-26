@@ -23,7 +23,7 @@ class EditBranch extends EditRecord
     {
         $schedules = $this->record->getWorkingHoursSchedules();
 
-        $data['working_hours_schedules'] = !empty($schedules) ? $schedules : [
+        $data['working_hours_schedules'] = ! empty($schedules) ? $schedules : [
             [
                 'days' => ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday'],
                 'opening_time' => '08:00',

@@ -147,7 +147,7 @@ class AuthApiTest extends TestCase
 
         $token = $user->createToken('test_token')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->deleteJson('/api/v1/auth/delete-account');
 
         $response->assertStatus(200)

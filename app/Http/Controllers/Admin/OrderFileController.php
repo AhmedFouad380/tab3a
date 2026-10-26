@@ -41,7 +41,7 @@ class OrderFileController extends Controller
         $zipFileName = "طلب_{$order->order_number}_الملفات.zip";
         $tempPath = tempnam(sys_get_temp_dir(), 'order_zip_');
 
-        $zip = new ZipArchive();
+        $zip = new ZipArchive;
         if ($zip->open($tempPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
             abort(500, 'تعذر إنشاء ملف الأرشيف المضغوط.');
         }
@@ -51,7 +51,7 @@ class OrderFileController extends Controller
             if ($item->file_path && Storage::disk('public')->exists($item->file_path)) {
                 $absolutePath = Storage::disk('public')->path($item->file_path);
                 $originalName = $item->original_file_name ?: basename($item->file_path);
-                $zipEntryName = ($index + 1) . '_' . $originalName;
+                $zipEntryName = ($index + 1).'_'.$originalName;
                 $zip->addFile($absolutePath, $zipEntryName);
                 $filesAdded++;
             }
@@ -72,7 +72,7 @@ class OrderFileController extends Controller
      */
     public function downloadItem(OrderItem $orderItem): StreamedResponse
     {
-        if (!$orderItem->file_path || !Storage::disk('public')->exists($orderItem->file_path)) {
+        if (! $orderItem->file_path || ! Storage::disk('public')->exists($orderItem->file_path)) {
             abort(404, 'الملف المرفق غير موجود على الخادم.');
         }
 
@@ -86,7 +86,7 @@ class OrderFileController extends Controller
      */
     public function previewItem(OrderItem $orderItem): BinaryFileResponse
     {
-        if (!$orderItem->file_path || !Storage::disk('public')->exists($orderItem->file_path)) {
+        if (! $orderItem->file_path || ! Storage::disk('public')->exists($orderItem->file_path)) {
             abort(404, 'الملف المرفق غير موجود على الخادم.');
         }
 
@@ -96,7 +96,7 @@ class OrderFileController extends Controller
 
         return response()->file($fullPath, [
             'Content-Type' => $mimeType,
-            'Content-Disposition' => 'inline; filename="' . rawurlencode($fileName) . '"',
+            'Content-Disposition' => 'inline; filename="'.rawurlencode($fileName).'"',
         ]);
     }
 }

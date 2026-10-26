@@ -15,9 +15,13 @@ class StaticPageResource extends Resource
     protected static ?string $model = StaticPage::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
+
     protected static ?string $navigationGroup = '📝 المحتوى وخدمة العملاء';
+
     protected static ?string $modelLabel = 'صفحة تعريفية';
+
     protected static ?string $pluralModelLabel = 'الصفحات التعريفية (CMS)';
+
     protected static ?int $navigationSort = 1;
 
     public static function form(Form $form): Form

@@ -17,7 +17,7 @@ class UserResource extends JsonResource
             'phone' => $this->phone,
             'phone_country_code' => $this->phone_country_code,
             'email' => $this->email,
-            'avatar' => $this->avatar ? asset('storage/' . $this->avatar) : null,
+            'avatar' => $this->avatar ? asset('storage/'.$this->avatar) : null,
             'preferred_locale' => $this->preferred_locale,
             'wallet_balance' => (float) $this->wallet_balance,
             'status' => $this->status,

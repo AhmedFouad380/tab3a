@@ -14,7 +14,7 @@ class OrderItemResource extends JsonResource
         return [
             'id' => $this->id,
             'original_file_name' => $this->original_file_name,
-            'file_url' => asset('storage/' . $this->file_path),
+            'file_url' => asset('storage/'.$this->file_path),
             'file_extension' => $this->file_extension,
             'detected_page_count' => (int) $this->detected_page_count,
             'pages_to_print_count' => (int) $this->pages_to_print_count,

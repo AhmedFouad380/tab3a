@@ -7,7 +7,6 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -73,7 +72,7 @@ class OrderFileDownloadTest extends TestCase
             'total_amount' => 10.00,
         ]);
 
-        $response = $this->get('/admin/orders/' . $order->id . '/download');
+        $response = $this->get('/admin/orders/'.$order->id.'/download');
 
         $response->assertRedirect('/admin/login');
     }
@@ -173,7 +172,7 @@ class OrderFileDownloadTest extends TestCase
 
         $item = $this->createOrderItem($order, 'api_doc.pdf', 'uploads/api_doc.pdf');
 
-        $response = $this->actingAs($user, 'sanctum')->get('/api/v1/orders/' . $order->id . '/download');
+        $response = $this->actingAs($user, 'sanctum')->get('/api/v1/orders/'.$order->id.'/download');
 
         $response->assertOk();
         $this->assertStringContainsString('attachment', $response->headers->get('content-disposition'));
@@ -198,7 +197,7 @@ class OrderFileDownloadTest extends TestCase
 
         $item = $this->createOrderItem($order, 'secret.pdf', 'uploads/secret.pdf');
 
-        $response = $this->actingAs($user2, 'sanctum')->get('/api/v1/orders/' . $order->id . '/download');
+        $response = $this->actingAs($user2, 'sanctum')->get('/api/v1/orders/'.$order->id.'/download');
 
         $response->assertStatus(404);
     }

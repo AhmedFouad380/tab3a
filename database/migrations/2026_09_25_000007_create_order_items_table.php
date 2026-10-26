@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('order_items', function (Blueprint $table) {
             $table->id();
             $table->foreignId('order_id')->constrained('orders')->cascadeOnDelete();
-            
+
             // File Metadata
             $table->string('original_file_name');
             $table->string('file_path');
@@ -20,7 +20,7 @@ return new class extends Migration
             $table->integer('detected_page_count')->default(1); // Read automatically via pdf parser
             $table->integer('pages_to_print_count')->default(1); // After applying range
             $table->string('page_range_selection')->default('all'); // 'all', '1-5', '3,7,9'
-            
+
             // Print Configuration
             $table->string('paper_size', 10)->default('A4');
             $table->string('paper_type')->default('plain_80g');
@@ -28,7 +28,7 @@ return new class extends Migration
             $table->enum('side_mode', ['single_sided', 'double_sided'])->default('single_sided');
             $table->enum('orientation', ['auto', 'portrait', 'landscape'])->default('auto');
             $table->unsignedSmallInteger('copies_count')->default(1);
-            
+
             // Finishing & Binding (Optional)
             $table->foreignId('finishing_option_id')->nullable()->constrained('finishing_options')->nullOnDelete();
             $table->decimal('finishing_price', 8, 2)->default(0.00);

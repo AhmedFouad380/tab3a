@@ -5,7 +5,6 @@ namespace App\Filament\Widgets;
 use App\Models\KioskMachine;
 use App\Models\KioskMaintenanceAlert;
 use App\Models\Order;
-use App\Models\User;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -22,7 +21,7 @@ class StatsOverviewWidget extends BaseWidget
         $unresolvedAlerts = KioskMaintenanceAlert::where('is_resolved', false)->count();
 
         return [
-            Stat::make('إجمالي المبيعات المؤكدة', number_format($totalRevenue, 2) . ' SAR')
+            Stat::make('إجمالي المبيعات المؤكدة', number_format($totalRevenue, 2).' SAR')
                 ->description('المبيعات من الطباعة الذاتية والمسبقة')
                 ->descriptionIcon('heroicon-m-banknotes')
                 ->color('success'),
