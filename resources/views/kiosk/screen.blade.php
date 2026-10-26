@@ -540,6 +540,10 @@
                         {!! $qrSvg !!}
                     </div>
                 </div>
+                <div style="font-size: 1.15rem; font-weight: 800; color: #64748b; margin-top: 4px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <span>كود الطابعة:</span>
+                    <span style="color: #6366f1; background: rgba(99, 102, 241, 0.12); padding: 2px 10px; border-radius: 6px; border: 1px solid rgba(99, 102, 241, 0.25); font-family: monospace;">{{ $kiosk->machine_code }}</span>
+                </div>
 
                 <div>
                     <h1 class="stage-title">الطباعة الذاتية الفورية</h1>

@@ -45,7 +45,9 @@ class OrderController extends BaseApiController
             $colorMode = $request->input('color_mode', $session->color_mode ?: 'black_and_white');
             $sideMode = $request->input('side_mode', $session->side_mode ?: 'single_sided');
         } else {
-            $kiosk = KioskMachine::findOrFail($request->kiosk_machine_id);
+            $kiosk = $request->filled('machine_code')
+                ? KioskMachine::where('machine_code', $request->machine_code)->firstOrFail()
+                : KioskMachine::findOrFail($request->kiosk_machine_id);
             $filePath = $request->file_path;
             $originalFileName = $request->original_file_name;
             $fileExtension = $request->input('file_extension', pathinfo($originalFileName ?? '', PATHINFO_EXTENSION) ?: 'pdf');

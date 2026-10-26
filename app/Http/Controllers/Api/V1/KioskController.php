@@ -20,7 +20,10 @@ class KioskController extends BaseApiController
         $query = KioskMachine::query();
 
         if ($request->filled('qr_token')) {
-            $query->where('qr_token', $request->qr_token);
+            $query->where(function ($q) use ($request) {
+                $q->where('qr_token', $request->qr_token)
+                    ->orWhere('machine_code', $request->qr_token);
+            });
         } elseif ($request->filled('nfc_tag_id')) {
             $query->where('nfc_tag_id', $request->nfc_tag_id);
         } elseif ($request->filled('machine_code')) {
@@ -180,7 +183,10 @@ class KioskController extends BaseApiController
                 $query->where('id', $sess->kiosk_machine_id);
             }
         } elseif ($request->filled('qr_token')) {
-            $query->where('qr_token', $request->qr_token);
+            $query->where(function ($q) use ($request) {
+                $q->where('qr_token', $request->qr_token)
+                    ->orWhere('machine_code', $request->qr_token);
+            });
         } elseif ($request->filled('machine_code')) {
             $query->where('machine_code', $request->machine_code);
         } elseif ($request->filled('nfc_tag_id')) {

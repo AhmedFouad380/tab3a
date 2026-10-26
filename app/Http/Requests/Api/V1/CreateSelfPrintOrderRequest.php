@@ -13,7 +13,8 @@ class CreateSelfPrintOrderRequest extends BaseApiRequest
             'page_range_selection' => 'nullable|string',
 
             // These fields are only required if session_token is not provided
-            'kiosk_machine_id' => 'required_without:session_token|exists:kiosk_machines,id',
+            'kiosk_machine_id' => 'required_without_all:session_token,machine_code|nullable|exists:kiosk_machines,id',
+            'machine_code' => 'required_without_all:session_token,kiosk_machine_id|nullable|exists:kiosk_machines,machine_code',
             'file_path' => 'required_without:session_token|string',
             'original_file_name' => 'required_without:session_token|string',
             'file_extension' => 'nullable|string',
