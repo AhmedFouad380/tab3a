@@ -13,12 +13,12 @@ class KioskStickerController extends Controller
      */
     public function downloadQr(KioskMachine $kiosk)
     {
-        $connectUrl = request()->getSchemeAndHttpHost().'/kiosk-connect/'.$kiosk->qr_token;
+        $connectUrl = request()->getSchemeAndHttpHost().'/kiosk-connect/'.$kiosk->machine_code;
 
         $svg = QrCode::size(600)
             ->errorCorrection('H')
             ->margin(2)
-            ->generate($connectUrl);
+            ->generate($kiosk->machine_code);
 
         $fileName = 'QR_'.$kiosk->machine_code.'_'.($kiosk->branch?->name['en'] ?? 'kiosk').'.svg';
 
@@ -33,12 +33,12 @@ class KioskStickerController extends Controller
      */
     public function printSticker(KioskMachine $kiosk)
     {
-        $connectUrl = request()->getSchemeAndHttpHost().'/kiosk-connect/'.$kiosk->qr_token;
+        $connectUrl = request()->getSchemeAndHttpHost().'/kiosk-connect/'.$kiosk->machine_code;
 
         $qrSvg = QrCode::size(340)
             ->errorCorrection('H')
             ->margin(1)
-            ->generate($connectUrl);
+            ->generate($kiosk->machine_code);
 
         $appName = SystemSetting::where('key', 'app_name')->first()?->value['ar'] ?? 'منصة طباعة';
         $supportPhone = SystemSetting::where('key', 'support_phone')->first()?->value['ar'] ?? '+966500000000';

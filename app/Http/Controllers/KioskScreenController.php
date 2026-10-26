@@ -330,8 +330,9 @@ class KioskScreenController extends Controller
             'expires_at' => now()->addMinutes(10),
         ]);
 
-        $connectUrl = request()->getSchemeAndHttpHost().'/kiosk-connect/'.$newSession->session_token;
-        $qrSvg = (string) QrCode::size(280)->errorCorrection('H')->margin(1)->generate($connectUrl);
+        $machineCode = $session->kiosk?->machine_code;
+        $connectUrl = request()->getSchemeAndHttpHost().'/kiosk-connect/'.($machineCode ?? $newSession->session_token);
+        $qrSvg = (string) QrCode::size(280)->errorCorrection('H')->margin(1)->generate($machineCode ?? $connectUrl);
 
         return response()->json([
             'success' => true,
