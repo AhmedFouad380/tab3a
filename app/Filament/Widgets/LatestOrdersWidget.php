@@ -15,6 +15,13 @@ class LatestOrdersWidget extends BaseWidget
 
     protected static ?string $heading = '⚡ أحدث طلبات الطباعة اللحظية';
 
+    public static function canView(): bool
+    {
+        $admin = auth('admin')->user();
+
+        return (bool) ($admin?->can('view_orders') || $admin?->can('manage_orders'));
+    }
+
     public function table(Table $table): Table
     {
         return $table

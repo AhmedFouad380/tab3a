@@ -9,6 +9,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 
 class PricingRuleResource extends Resource
 {
@@ -23,6 +24,26 @@ class PricingRuleResource extends Resource
     protected static ?string $pluralModelLabel = 'قواعد تسعير الطباعة';
 
     protected static ?int $navigationSort = 2;
+
+    public static function canViewAny(): bool
+    {
+        return (bool) auth('admin')->user()?->can('manage_pricing');
+    }
+
+    public static function canCreate(): bool
+    {
+        return (bool) auth('admin')->user()?->can('manage_pricing');
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return (bool) auth('admin')->user()?->can('manage_pricing');
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return (bool) auth('admin')->user()?->can('manage_pricing');
+    }
 
     public static function form(Form $form): Form
     {

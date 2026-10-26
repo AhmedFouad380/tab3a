@@ -11,6 +11,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 
 class OrderResource extends Resource
 {
@@ -25,6 +26,28 @@ class OrderResource extends Resource
     protected static ?string $pluralModelLabel = 'طلبات الطباعة';
 
     protected static ?int $navigationSort = 1;
+
+    public static function canViewAny(): bool
+    {
+        $admin = auth('admin')->user();
+
+        return (bool) ($admin?->can('view_orders') || $admin?->can('manage_orders'));
+    }
+
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return (bool) auth('admin')->user()?->can('manage_orders');
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return (bool) auth('admin')->user()?->can('manage_orders');
+    }
 
     public static function form(Form $form): Form
     {

@@ -9,6 +9,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Hash;
 
 class AdminResource extends Resource
@@ -24,6 +25,26 @@ class AdminResource extends Resource
     protected static ?string $pluralModelLabel = 'المدراء وفريق العمل';
 
     protected static ?int $navigationSort = 1;
+
+    public static function canViewAny(): bool
+    {
+        return (bool) auth('admin')->user()?->can('manage_admins');
+    }
+
+    public static function canCreate(): bool
+    {
+        return (bool) auth('admin')->user()?->can('manage_admins');
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return (bool) auth('admin')->user()?->can('manage_admins');
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return (bool) auth('admin')->user()?->can('manage_admins');
+    }
 
     public static function form(Form $form): Form
     {

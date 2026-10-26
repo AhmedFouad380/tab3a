@@ -10,6 +10,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 
 class KioskMachineResource extends Resource
 {
@@ -24,6 +25,26 @@ class KioskMachineResource extends Resource
     protected static ?string $pluralModelLabel = 'ماكينات الطباعة الذاتية (Kiosks)';
 
     protected static ?int $navigationSort = 2;
+
+    public static function canViewAny(): bool
+    {
+        return (bool) auth('admin')->user()?->can('manage_kiosks');
+    }
+
+    public static function canCreate(): bool
+    {
+        return (bool) auth('admin')->user()?->can('manage_kiosks');
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return (bool) auth('admin')->user()?->can('manage_kiosks');
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return (bool) auth('admin')->user()?->can('manage_kiosks');
+    }
 
     public static function form(Form $form): Form
     {

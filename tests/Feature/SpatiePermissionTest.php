@@ -108,4 +108,38 @@ class SpatiePermissionTest extends TestCase
 
         $response->assertOk();
     }
+
+    public function test_branch_manager_with_limited_permissions_cannot_access_unauthorized_filament_resources(): void
+    {
+        $branchStaff = Admin::create([
+            'name' => 'مشرف فرع محدد الصلاحيات',
+            'email' => 'staff_branch@test.com',
+            'phone' => '0577777777',
+            'password' => bcrypt('password'),
+            'role' => 'branch_manager',
+            'is_active' => true,
+        ]);
+
+        // Authorized resource (view_orders)
+        $this->actingAs($branchStaff, 'admin')
+            ->get('/admin/orders')
+            ->assertOk();
+
+        // Unauthorized resources
+        $this->actingAs($branchStaff, 'admin')
+            ->get('/admin/roles')
+            ->assertForbidden();
+
+        $this->actingAs($branchStaff, 'admin')
+            ->get('/admin/users')
+            ->assertForbidden();
+
+        $this->actingAs($branchStaff, 'admin')
+            ->get('/admin/pricing-rules')
+            ->assertForbidden();
+
+        $this->actingAs($branchStaff, 'admin')
+            ->get('/admin/system-settings')
+            ->assertForbidden();
+    }
 }

@@ -8,6 +8,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 use Spatie\Permission\Models\Role;
 
 class RoleResource extends Resource
@@ -23,6 +24,26 @@ class RoleResource extends Resource
     protected static ?string $pluralModelLabel = 'الأدوار والصلاحيات';
 
     protected static ?int $navigationSort = 2;
+
+    public static function canViewAny(): bool
+    {
+        return (bool) auth('admin')->user()?->can('manage_roles');
+    }
+
+    public static function canCreate(): bool
+    {
+        return (bool) auth('admin')->user()?->can('manage_roles');
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return (bool) auth('admin')->user()?->can('manage_roles');
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return (bool) auth('admin')->user()?->can('manage_roles');
+    }
 
     public static function form(Form $form): Form
     {
