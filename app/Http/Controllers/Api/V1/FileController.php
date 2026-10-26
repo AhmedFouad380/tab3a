@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\BaseApiController;
 use App\Http\Requests\Api\V1\FileUploadRequest;
 use App\Http\Requests\Api\V1\PriceCalculationRequest;
 use App\Models\FinishingOption;
+use App\Models\KioskMachine;
 use App\Models\KioskSession;
 use App\Models\PricingRule;
 use Illuminate\Http\JsonResponse;
@@ -166,21 +167,32 @@ class FileController extends BaseApiController
 
         $subtotal = $printSubtotal + $finishingPrice;
 
-        // Tax (VAT 15%)
-        $taxRate = 0.15;
-        $taxAmount = round($subtotal * $taxRate, 2);
-        $totalAmount = round($subtotal + $taxAmount, 2);
-
         // Sync with Kiosk Screen if session or machine is provided
         $kioskSession = null;
+        $kiosk = null;
         if ($request->filled('session_token')) {
             $kioskSession = KioskSession::where('session_token', $request->session_token)->first();
+            $kiosk = $kioskSession?->kiosk;
         } elseif ($request->filled('kiosk_machine_id')) {
             $kioskSession = KioskSession::where('kiosk_machine_id', $request->kiosk_machine_id)
                 ->whereIn('status', ['waiting_scan', 'connected', 'file_uploaded', 'awaiting_payment'])
                 ->latest()
                 ->first();
+            $kiosk = $kioskSession?->kiosk ?? KioskMachine::find($request->kiosk_machine_id);
         }
+
+        // Apply minimum order price for kiosk / self-printing
+        if ($kiosk) {
+            $minPrice = $kiosk->getEffectiveMinOrderPrice();
+            if ($subtotal < $minPrice) {
+                $subtotal = $minPrice;
+            }
+        }
+
+        // Tax (VAT 15%)
+        $taxRate = 0.15;
+        $taxAmount = round($subtotal * $taxRate, 2);
+        $totalAmount = round($subtotal + $taxAmount, 2);
 
         if ($kioskSession) {
             $newStatus = $request->boolean('is_checkout_step') ? 'awaiting_payment' : 'file_uploaded';

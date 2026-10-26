@@ -214,10 +214,12 @@ class KioskInstantPrintingTest extends TestCase
         ]);
         $calcRes->assertOk();
         $calcRes->assertJsonPath('data.kiosk_screen_status', 'awaiting_payment');
+        $this->assertEquals(2.30, $calcRes->json('data.total_amount'));
 
         // Screen is now 'awaiting_payment'
         $session->refresh();
         $this->assertEquals('awaiting_payment', $session->status);
+        $this->assertEquals(2.30, $session->total_price);
 
         // 4. Mobile user completes checkout using ONLY session_token and payment_method
         $checkoutRes = $this->actingAs($user, 'sanctum')->postJson('/api/v1/orders/self-print/checkout', [
