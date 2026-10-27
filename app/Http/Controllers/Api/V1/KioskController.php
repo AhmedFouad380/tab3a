@@ -127,10 +127,17 @@ class KioskController extends BaseApiController
         ]);
 
         // Sync with Kiosk Screen: set session to 'connected'
-        $session = KioskSession::where('kiosk_machine_id', $kiosk->id)
-            ->whereIn('status', ['waiting_scan', 'connected'])
-            ->latest()
-            ->first();
+        $session = null;
+        if ($request->filled('session_token')) {
+            $session = KioskSession::where('session_token', $request->session_token)->first();
+        }
+
+        if (! $session) {
+            $session = KioskSession::where('kiosk_machine_id', $kiosk->id)
+                ->whereIn('status', ['waiting_scan', 'connected'])
+                ->latest()
+                ->first();
+        }
 
         if (! $session) {
             $session = KioskSession::create([
@@ -207,10 +214,17 @@ class KioskController extends BaseApiController
         }
 
         // Find or create active session and transition to 'connected'
-        $session = KioskSession::where('kiosk_machine_id', $kiosk->id)
-            ->whereIn('status', ['waiting_scan', 'connected'])
-            ->latest()
-            ->first();
+        $session = null;
+        if ($request->filled('session_token')) {
+            $session = KioskSession::where('session_token', $request->session_token)->first();
+        }
+
+        if (! $session) {
+            $session = KioskSession::where('kiosk_machine_id', $kiosk->id)
+                ->whereIn('status', ['waiting_scan', 'connected'])
+                ->latest()
+                ->first();
+        }
 
         if (! $session) {
             $session = KioskSession::create([
