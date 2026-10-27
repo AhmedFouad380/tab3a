@@ -19,17 +19,22 @@ class KioskController extends BaseApiController
     {
         $query = KioskMachine::query();
 
-        if ($request->filled('qr_token')) {
+        if ($request->filled('machine_code')) {
+            $query->where('machine_code', $request->machine_code);
+        } elseif ($request->filled('qr_token')) {
             $query->where(function ($q) use ($request) {
                 $q->where('qr_token', $request->qr_token)
                     ->orWhere('machine_code', $request->qr_token);
             });
         } elseif ($request->filled('nfc_tag_id')) {
             $query->where('nfc_tag_id', $request->nfc_tag_id);
-        } elseif ($request->filled('machine_code')) {
-            $query->where('machine_code', $request->machine_code);
+        } elseif ($request->filled('session_token')) {
+            $sess = KioskSession::where('session_token', $request->session_token)->first();
+            if ($sess) {
+                $query->where('id', $sess->kiosk_machine_id);
+            }
         } else {
-            return $this->error($this->getLocale() === 'en' ? 'QR Code or NFC ID is required' : 'رمز الاستجابة السريعة QR أو NFC مطلوب', 422);
+            return $this->error($this->getLocale() === 'en' ? 'Machine identifier (QR, NFC, machine code, or session token) is required' : 'معرف الماكينة مطلوب (كود، QR، NFC، أو رمز الجلسة)', 422);
         }
 
         $kiosk = $query->first();

@@ -7,6 +7,7 @@ class VerifyKioskRequest extends BaseApiRequest
     public function rules(): array
     {
         return [
+            'session_token' => 'nullable|string',
             'qr_token' => 'nullable|string',
             'nfc_tag_id' => 'nullable|string',
             'machine_code' => 'nullable|string',
