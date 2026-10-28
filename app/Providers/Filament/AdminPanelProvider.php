@@ -32,9 +32,9 @@ class AdminPanelProvider extends PanelProvider
                 'primary' => Color::Blue,
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
-            ->brandName(fn () => SystemSetting::where('key', 'app_name')->first()?->value['ar'] ?? 'طباعة')
+            ->brandName(fn () => SystemSetting::getSetting('app_name', 'ar', 'طباعة'))
             ->brandLogo(function () {
-                $settingLogo = SystemSetting::where('key', 'app_logo')->first()?->value['ar'] ?? null;
+                $settingLogo = SystemSetting::getSetting('app_logo', 'ar', null);
                 if ($settingLogo) {
                     return str_starts_with($settingLogo, 'http') ? $settingLogo : (file_exists(public_path($settingLogo)) ? asset($settingLogo) : asset('storage/'.$settingLogo));
                 }

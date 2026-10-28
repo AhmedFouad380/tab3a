@@ -35,9 +35,10 @@ class KioskScreenController extends Controller
             ->margin(1)
             ->generate($kiosk->machine_code);
 
-        $appName = SystemSetting::where('key', 'app_name')->first()?->value['ar'] ?? 'منصة طباعة';
+        $appName = SystemSetting::getSetting('app_name', 'ar', 'منصة طباعة');
+        $supportPhone = SystemSetting::getSetting('support_phone', 'ar', '+966500000000');
 
-        return view('kiosk.screen', compact('kiosk', 'session', 'qrSvg', 'connectUrl', 'appName'));
+        return view('kiosk.screen', compact('kiosk', 'session', 'qrSvg', 'connectUrl', 'appName', 'supportPhone'));
     }
 
     /**

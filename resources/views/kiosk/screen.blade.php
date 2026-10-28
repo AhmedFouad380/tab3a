@@ -6,20 +6,25 @@
     <title>شاشة كشك الطباعة الفورية - {{ $kiosk->machine_code }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
     <style>
         :root {
-            --bg-dark: #090d16;
-            --surface: #111827;
-            --surface-card: #1e293b;
-            --primary: #10b981;
-            --primary-glow: rgba(16, 185, 129, 0.35);
-            --accent: #3b82f6;
-            --accent-glow: rgba(59, 130, 246, 0.35);
-            --gold: #f59e0b;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --border: #334155;
+            --primary-blue: #005bb5;
+            --primary-hover: #004b99;
+            --primary-light: #e0f2fe;
+            --accent-blue: #0284c7;
+            --bg-canvas: #edf3f9;
+            --card-white: #ffffff;
+            --text-dark: #0f172a;
+            --text-blue: #004085;
+            --text-body: #334155;
+            --text-muted: #64748b;
+            --border-light: #e2e8f0;
+            --success-green: #10b981;
+            --success-bg: #ecfdf5;
+            --success-text: #047857;
         }
 
         * {
@@ -27,617 +32,933 @@
             margin: 0;
             padding: 0;
             user-select: none;
-            font-family: 'Cairo', sans-serif;
+            font-family: 'Cairo', system-ui, -apple-system, sans-serif;
+        }
+
+        .num-font {
+            font-family: 'Plus Jakarta Sans', 'Cairo', sans-serif;
         }
 
         body {
-            background-color: var(--bg-dark);
-            color: var(--text-main);
+            background-color: var(--bg-canvas);
+            color: var(--text-dark);
             min-height: 100vh;
             width: 100vw;
             overflow-x: hidden;
-            overflow-y: auto;
+            overflow-y: hidden;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
             position: relative;
         }
 
-        /* Ambient glowing background */
-        body::before {
-            content: '';
+        /* Ambient Geometric Blue Ribbons in Background (Matching Screenshot) */
+        .bg-decorative-wrap {
             position: absolute;
-            top: -20%;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 800px;
-            height: 500px;
-            background: radial-gradient(ellipse, rgba(16, 185, 129, 0.12) 0%, rgba(15, 23, 42, 0) 70%);
-            z-index: 0;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
             pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
         }
 
-        /* Header Bar */
-        .header {
+        .bg-ribbon-left {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 45vw;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(186, 215, 248, 0.45) 0%, rgba(219, 234, 254, 0.15) 60%, transparent 100%);
+            clip-path: polygon(0 0, 75% 0, 25% 100%, 0 100%);
+        }
+
+        .bg-ribbon-left-accent {
+            position: absolute;
+            top: 0;
+            left: 6%;
+            width: 32vw;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(147, 197, 253, 0.3) 0%, rgba(219, 234, 254, 0.05) 50%, transparent 100%);
+            clip-path: polygon(0 0, 85% 0, 20% 100%, 0 100%);
+        }
+
+        .bg-ribbon-right {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 45vw;
+            height: 100%;
+            background: linear-gradient(225deg, rgba(186, 215, 248, 0.45) 0%, rgba(219, 234, 254, 0.15) 60%, transparent 100%);
+            clip-path: polygon(25% 0, 100% 0, 100% 100%, 75% 100%);
+        }
+
+        .bg-ribbon-right-accent {
+            position: absolute;
+            top: 0;
+            right: 6%;
+            width: 32vw;
+            height: 100%;
+            background: linear-gradient(225deg, rgba(147, 197, 253, 0.3) 0%, rgba(219, 234, 254, 0.05) 50%, transparent 100%);
+            clip-path: polygon(15% 0, 100% 0, 100% 100%, 80% 100%);
+        }
+
+        /* Subtle Stationery Book Watermark (Bottom Left) */
+        .watermark-book {
+            position: absolute;
+            bottom: 40px;
+            left: 30px;
+            width: 140px;
+            height: 140px;
+            opacity: 0.18;
+            pointer-events: none;
+            color: #2563eb;
+        }
+
+        /* ================= Header Bar ================= */
+        .kiosk-header {
             position: relative;
             z-index: 10;
+            height: 64px;
+            background: #ffffff;
+            border-bottom: 1px solid var(--border-light);
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 12px 32px;
-            background: rgba(17, 24, 39, 0.7);
-            backdrop-filter: blur(12px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 0 28px;
+            box-shadow: 0 2px 10px rgba(0, 50, 120, 0.04);
         }
 
-        .brand-section {
+        /* Header Right: Brand + Machine Badge */
+        .header-brand-wrap {
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: 16px;
         }
 
-        .brand-logo {
+        .header-app-icon {
             width: 42px;
             height: 42px;
-            background: linear-gradient(135deg, #10b981, #059669);
             border-radius: 12px;
+            background: linear-gradient(135deg, #005bb5, #0284c7);
+            color: #ffffff;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 22px;
-            box-shadow: 0 8px 20px var(--primary-glow);
-        }
-
-        .brand-title {
             font-size: 20px;
-            font-weight: 900;
-            letter-spacing: -0.5px;
+            box-shadow: 0 4px 12px rgba(0, 91, 181, 0.25);
         }
 
-        .kiosk-badge {
-            background: rgba(16, 185, 129, 0.15);
-            color: #34d399;
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            padding: 4px 14px;
-            border-radius: 999px;
+        .header-titles {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header-app-name {
+            font-size: 1.05rem;
             font-weight: 800;
-            font-size: 13px;
-            font-family: 'Outfit', sans-serif;
+            color: var(--primary-blue);
+            line-height: 1.2;
         }
 
-        .hardware-stats {
-            display: flex;
-            align-items: center;
-            gap: 18px;
-        }
-
-        .stat-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 13px;
-            font-weight: 700;
+        .header-branch-name {
+            font-size: 0.78rem;
             color: var(--text-muted);
-            background: rgba(255, 255, 255, 0.03);
-            padding: 6px 14px;
-            border-radius: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
 
-        .stat-dot {
+        .kiosk-code-pill {
+            background: #005bb5;
+            color: #ffffff;
+            border-radius: 999px;
+            padding: 5px 16px;
+            font-size: 0.82rem;
+            font-weight: 800;
+            box-shadow: 0 2px 8px rgba(0, 91, 181, 0.3);
+        }
+
+        /* Header Left: Status, Paper, Ink & Clock */
+        .header-stats-wrap {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        .status-badge.online {
+            background: #ecfdf5;
+            color: #047857;
+            border: 1px solid #a7f3d0;
+        }
+
+        .status-dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
             background: #10b981;
-            box-shadow: 0 0 10px #10b981;
-            animation: pulse 2s infinite;
+            box-shadow: 0 0 8px #10b981;
+            animation: pulse-dot 2s infinite;
         }
 
-        .clock-time {
-            font-family: 'Outfit', sans-serif;
-            font-size: 18px;
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.85); }
+        }
+
+        .stat-badge-blue {
+            background: #f0f7ff;
+            color: #0284c7;
+            border: 1px solid #dbeafe;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 0.8rem;
             font-weight: 700;
-            color: #fff;
         }
 
-        /* Main Display Canvas */
+        .stat-badge-slate {
+            background: #f8fafc;
+            color: #334155;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        .header-clock {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: #004085;
+            padding-right: 6px;
+        }
+
+        /* ================= Main Stage & Card ================= */
         .main-stage {
             position: relative;
-            z-index: 10;
+            z-index: 5;
             flex: 1;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 14px 20px;
+            padding: 18px 24px;
         }
 
+        /* The Hero Floating White Card (Exact replica of the screenshot) */
         .card-stage {
-            background: rgba(30, 41, 59, 0.6);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            width: 92%;
+            max-width: 1040px;
+            background: var(--card-white);
             border-radius: 28px;
-            padding: 24px 32px;
-            width: 100%;
-            max-width: 880px;
-            text-align: center;
-            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.4);
-            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        /* Stage 1: Waiting for Scan */
-        .stage-waiting {
-            display: flex;
-            align-items: center;
-            justify-content: space-around;
-            gap: 32px;
-            text-align: right;
-        }
-
-        .qr-box-outer {
-            background: #ffffff;
-            padding: 16px;
-            border-radius: 24px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 40px var(--primary-glow);
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            box-shadow: 0 16px 45px rgba(2, 60, 130, 0.12);
             position: relative;
-            animation: float 4s ease-in-out infinite;
+            overflow: hidden;
+            padding: 38px 46px;
         }
 
-        .qr-box-outer svg {
-            display: block;
-            width: 220px;
-            height: 220px;
-        }
-
-        .scanner-laser {
+        /* Geometric corner accents on the main card */
+        .card-corner-topleft {
             position: absolute;
-            left: 10%;
-            right: 10%;
-            height: 4px;
-            background: linear-gradient(90deg, transparent, #10b981, transparent);
-            box-shadow: 0 0 15px #10b981;
-            animation: laserMove 2.5s ease-in-out infinite;
+            top: 0;
+            left: 0;
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, #005bb5 50%, transparent 50%);
+            border-top-left-radius: 26px;
         }
 
-        .stage-title {
-            font-size: 28px;
-            font-weight: 900;
-            line-height: 1.25;
-            margin-bottom: 8px;
-            background: linear-gradient(135deg, #ffffff 40%, #94a3b8 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+        .card-corner-bottomright {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(315deg, #005bb5 50%, transparent 50%);
+            border-bottom-right-radius: 26px;
         }
 
-        .stage-sub {
-            font-size: 15px;
-            color: var(--text-muted);
-            line-height: 1.5;
-            margin-bottom: 16px;
+        .card-corner-bottomleft {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(45deg, #0284c7 50%, transparent 50%);
+            border-bottom-left-radius: 26px;
         }
 
-        .features-pill {
+        .card-corner-topright {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(225deg, #005bb5 50%, transparent 50%);
+            border-top-right-radius: 26px;
+        }
+
+        /* ================= Stage 1: Waiting Scan View (Screenshot Layout) ================= */
+        .stage-waiting-grid {
+            display: grid;
+            grid-template-columns: 1.35fr auto 1fr;
+            align-items: center;
+            gap: 28px;
+            width: 100%;
+        }
+
+        /* Column 1: Info & Features (Right side in RTL) */
+        .waiting-text-col {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            justify-content: center;
         }
 
-        .pill-item {
+        .waiting-title {
+            font-size: 1.85rem;
+            font-weight: 900;
+            color: var(--primary-blue);
+            line-height: 1.25;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .waiting-subtitle {
+            font-size: 0.95rem;
+            color: var(--text-body);
+            line-height: 1.6;
+            margin-bottom: 22px;
+            font-weight: 600;
+        }
+
+        .features-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .feature-item {
             display: flex;
             align-items: center;
             gap: 12px;
-            font-size: 15px;
+            font-size: 0.94rem;
             font-weight: 700;
-            color: #e2e8f0;
+            color: #1e293b;
         }
 
-        .pill-icon {
-            width: 32px;
-            height: 32px;
-            border-radius: 10px;
-            background: rgba(16, 185, 129, 0.15);
-            color: #10b981;
+        .feature-icon-box {
+            width: 34px;
+            height: 34px;
+            border-radius: 9px;
+            background: #e0f2fe;
+            color: #0284c7;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 15px;
+            flex-shrink: 0;
+            border: 1px solid #bae6fd;
         }
 
-        /* Generic State Center Card */
+        /* Column 2: Logo & Machine Code Badge (Center) */
+        .waiting-middle-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 18px;
+            padding: 0 10px;
+        }
+
+        /* Partner Brand Logo (قرطاسية منصور - Mansour Stationery / Platform Logo) */
+        .partner-logo-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            direction: ltr;
+        }
+
+        .partner-icon-diamond {
+            width: 44px;
+            height: 44px;
+            background: #ffffff;
+            border: 2.5px solid #005bb5;
+            border-radius: 10px;
+            transform: rotate(45deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(0, 91, 181, 0.15);
+            flex-shrink: 0;
+        }
+
+        .partner-icon-inner {
+            transform: rotate(-45deg);
+            color: #005bb5;
+            font-size: 19px;
+        }
+
+        .partner-text-en {
+            text-align: right;
+            font-family: 'Cairo', sans-serif;
+            color: #005bb5;
+        }
+
+        .partner-text-en .brand-ar {
+            font-size: 1.15rem;
+            font-weight: 900;
+            line-height: 1.1;
+        }
+
+        .partner-text-en .brand-en {
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            opacity: 0.9;
+        }
+
+        .partner-text-ar {
+            text-align: left;
+            font-family: 'Cairo', sans-serif;
+            color: #005bb5;
+        }
+
+        .partner-text-ar .brand-ar {
+            font-size: 1.15rem;
+            font-weight: 900;
+            line-height: 1.1;
+        }
+
+        .partner-text-ar .brand-en {
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            opacity: 0.9;
+        }
+
+        /* Machine Code Sub-Card */
+        .machine-code-wrap {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .machine-code-label {
+            font-size: 0.88rem;
+            font-weight: 800;
+            color: var(--primary-blue);
+            line-height: 1.2;
+            text-align: center;
+        }
+
+        .machine-code-box {
+            background: #e0f2fe;
+            border: 1px solid #bae6fd;
+            border-radius: 12px;
+            padding: 8px 16px;
+            text-align: center;
+            color: #005bb5;
+            font-weight: 800;
+            font-size: 1.15rem;
+            line-height: 1.15;
+            box-shadow: inset 0 2px 4px rgba(0, 91, 181, 0.05);
+        }
+
+        /* Column 3: Big QR Code (Left side in RTL) */
+        .waiting-qr-col {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .qr-frame-outer {
+            width: 250px;
+            height: 250px;
+            background: #ffffff;
+            border-radius: 22px;
+            border: 2px solid #005bb5;
+            box-shadow: 0 10px 30px rgba(0, 91, 181, 0.12);
+            padding: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .qr-frame-outer svg {
+            width: 100% !important;
+            height: 100% !important;
+            display: block;
+        }
+
+        /* Subtle animated scan beam across QR */
+        .qr-scan-line {
+            position: absolute;
+            left: 8px;
+            right: 8px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #0284c7, #38bdf8, transparent);
+            box-shadow: 0 0 10px #0284c7;
+            border-radius: 2px;
+            animation: scan-move 3.2s ease-in-out infinite;
+            pointer-events: none;
+            opacity: 0.85;
+        }
+
+        @keyframes scan-move {
+            0% { top: 12px; }
+            50% { top: 230px; }
+            100% { top: 12px; }
+        }
+
+        /* ================= Active Customer Stages (Connected, Uploaded, Printing, etc.) ================= */
         .center-state {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 10px;
+            text-align: center;
+            padding: 20px 10px;
+            width: 100%;
         }
 
-        .big-icon {
-            font-size: 52px;
-            filter: drop-shadow(0 15px 30px rgba(0,0,0,0.4));
-            animation: bounceIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        .state-big-icon {
+            font-size: 58px;
+            margin-bottom: 12px;
         }
 
-        /* Stage Details Grid (Uploaded) */
-        .info-grid {
+        .state-title {
+            font-size: 1.9rem;
+            font-weight: 800;
+            color: var(--primary-blue);
+            margin-bottom: 8px;
+        }
+
+        .state-subtitle {
+            font-size: 1.1rem;
+            color: var(--text-body);
+            max-width: 600px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        /* Info Grid for Uploaded Document */
+        .doc-info-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
+            gap: 16px;
             width: 100%;
-            margin: 12px 0 16px 0;
+            max-width: 680px;
+            margin: 16px 0 24px;
         }
 
-        .info-card {
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 16px;
-            padding: 10px 14px;
+        .doc-info-card {
+            background: #f0f7ff;
+            border: 1px solid #bae6fd;
+            border-radius: 14px;
+            padding: 16px;
             text-align: center;
         }
 
-        .info-label {
-            font-size: 12px;
+        .doc-info-label {
+            font-size: 0.85rem;
             color: var(--text-muted);
             font-weight: 600;
             margin-bottom: 4px;
         }
 
-        .info-value {
-            font-size: 18px;
+        .doc-info-value {
+            font-size: 1.25rem;
             font-weight: 800;
-            color: #ffffff;
-            font-family: 'Outfit', 'Cairo', sans-serif;
+            color: var(--primary-blue);
         }
 
-        /* Price highlight */
-        .price-badge {
-            background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.25));
-            border: 2px solid #f59e0b;
-            color: #fbbf24;
-            padding: 8px 28px;
-            border-radius: 16px;
-            font-size: 24px;
-            font-weight: 900;
-            box-shadow: 0 8px 25px rgba(245, 158, 11, 0.2);
-            font-family: 'Outfit', 'Cairo', sans-serif;
+        .doc-price-pill {
+            background: linear-gradient(135deg, #005bb5, #0284c7);
+            color: #ffffff;
+            border-radius: 14px;
+            padding: 12px 36px;
+            font-size: 1.5rem;
+            font-weight: 800;
+            box-shadow: 0 6px 20px rgba(0, 91, 181, 0.25);
             display: inline-block;
         }
 
-        /* Progress Bar */
+        /* Progress Bar for Printing */
         .progress-bar-container {
-            width: 80%;
+            width: 100%;
+            max-width: 620px;
             height: 16px;
-            background: rgba(255, 255, 255, 0.08);
+            background: #e2e8f0;
             border-radius: 999px;
             overflow: hidden;
-            margin-top: 14px;
+            margin: 20px 0 10px;
             position: relative;
         }
 
         .progress-bar-fill {
             height: 100%;
-            background: linear-gradient(90deg, #10b981, #3b82f6);
-            border-radius: 999px;
             width: 0%;
-            transition: width 0.3s ease;
-            box-shadow: 0 0 20px #10b981;
-        }
-
-        /* Footer */
-        .footer {
-            position: relative;
-            z-index: 10;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 10px 32px;
-            background: rgba(17, 24, 39, 0.5);
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-            font-size: 13px;
-            color: var(--text-muted);
-            font-weight: 600;
-        }
-
-        /* Animations */
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
-
-        @keyframes laserMove {
-            0% { top: 10%; opacity: 0.8; }
-            50% { top: 90%; opacity: 1; }
-            100% { top: 10%; opacity: 0.8; }
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(0.9); }
-        }
-
-        @keyframes bounceIn {
-            0% { transform: scale(0.3); opacity: 0; }
-            60% { transform: scale(1.1); }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
-        .pulse-ring {
-            width: 90px;
-            height: 90px;
-            border-radius: 50%;
-            background: rgba(16, 185, 129, 0.2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 40px;
-            animation: pulse 1.5s infinite;
-        }
-
-        /* Inactivity Warning Modal */
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(4, 7, 15, 0.88);
-            backdrop-filter: blur(14px);
-            z-index: 9999;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            animation: fadeIn 0.25s ease;
-        }
-
-        .modal-card {
-            background: linear-gradient(145deg, #1e293b, #0f172a);
-            border: 2px solid #f59e0b;
-            box-shadow: 0 25px 60px rgba(245, 158, 11, 0.25), 0 0 40px rgba(0, 0, 0, 0.8);
-            border-radius: 28px;
-            padding: 36px 40px;
-            max-width: 580px;
-            width: 90%;
-            text-align: center;
-            position: relative;
-            animation: bounceIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        .modal-icon-badge {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background: rgba(245, 158, 11, 0.15);
-            border: 2px solid #f59e0b;
-            color: #f59e0b;
-            font-size: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 20px;
-            box-shadow: 0 0 25px rgba(245, 158, 11, 0.3);
-            animation: pulse 1.2s infinite;
-        }
-
-        .modal-title {
-            font-size: 26px;
-            font-weight: 900;
-            color: #fff;
-            margin-bottom: 12px;
-        }
-
-        .modal-description {
-            font-size: 16px;
-            color: #cbd5e1;
-            line-height: 1.6;
-            margin-bottom: 24px;
-        }
-
-        .countdown-ring {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            font-size: 18px;
-            font-weight: 800;
-            color: #fef08a;
-            background: rgba(245, 158, 11, 0.12);
-            border: 1px solid rgba(245, 158, 11, 0.4);
-            padding: 10px 24px;
+            background: linear-gradient(90deg, #0284c7, #005bb5);
             border-radius: 999px;
-            margin-bottom: 28px;
-        }
-
-        .countdown-number {
-            font-family: 'Outfit', sans-serif;
-            font-size: 28px;
-            font-weight: 900;
-            color: #f59e0b;
-        }
-
-        .modal-actions {
-            display: flex;
-            gap: 16px;
-            justify-content: center;
+            transition: width 0.3s ease;
         }
 
         .btn-continue {
-            flex: 1;
-            background: linear-gradient(135deg, #10b981, #059669);
-            color: #fff;
+            background: linear-gradient(135deg, #005bb5, #0284c7);
+            color: #ffffff;
             border: none;
-            padding: 14px 24px;
             border-radius: 14px;
-            font-size: 17px;
-            font-weight: 800;
+            padding: 14px 32px;
+            font-size: 1.05rem;
+            font-weight: 700;
             cursor: pointer;
-            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.35);
-            transition: all 0.2s ease;
+            box-shadow: 0 4px 15px rgba(0, 91, 181, 0.25);
+            transition: all 0.2s;
         }
 
         .btn-continue:hover {
             transform: translateY(-2px);
-            box-shadow: 0 12px 25px rgba(16, 185, 129, 0.5);
+            box-shadow: 0 6px 20px rgba(0, 91, 181, 0.4);
+        }
+
+        /* ================= Footer Bar ================= */
+        .kiosk-footer {
+            position: relative;
+            z-index: 10;
+            height: 48px;
+            background: var(--primary-blue);
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 32px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            box-shadow: 0 -2px 10px rgba(0, 50, 120, 0.1);
+        }
+
+        .kiosk-footer a {
+            color: #ffffff;
+            text-decoration: none;
+        }
+
+        .footer-support {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .footer-note {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            opacity: 0.95;
+            font-size: 0.84rem;
+        }
+
+        /* ================= Inactivity Modal ================= */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(8px);
+            z-index: 999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-card {
+            background: #ffffff;
+            border-radius: 24px;
+            padding: 36px 40px;
+            max-width: 520px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-light);
+        }
+
+        .modal-countdown {
+            background: #fee2e2;
+            color: #b91c1c;
+            border: 1px solid #fca5a5;
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-size: 1.15rem;
+            font-weight: 800;
+            margin: 20px 0;
+            display: inline-block;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 10px;
         }
 
         .btn-cancel {
-            background: rgba(255, 255, 255, 0.08);
-            color: #cbd5e1;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            padding: 14px 20px;
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #cbd5e1;
             border-radius: 14px;
-            font-size: 15px;
+            padding: 12px 24px;
+            font-size: 0.95rem;
             font-weight: 700;
             cursor: pointer;
-            transition: all 0.2s ease;
         }
 
-        .btn-cancel:hover {
-            background: rgba(239, 68, 68, 0.2);
-            border-color: #ef4444;
-            color: #fca5a5;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+        @media (max-width: 992px) {
+            .stage-waiting-grid {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+            .features-list {
+                align-items: center;
+            }
+            .waiting-middle-col {
+                order: 3;
+            }
+            .waiting-qr-col {
+                order: 2;
+            }
         }
     </style>
 </head>
 <body>
 
-    <!-- Header Bar -->
-    <header class="header">
-        <div class="brand-section">
-            <div class="brand-logo">🖨️</div>
-            <div>
-                <div class="brand-title">{{ $appName }}</div>
-                <div style="font-size: 13px; color: var(--text-muted);">
-                    📍 {{ $kiosk->branch?->name['ar'] ?? 'الفرع الرئيسي' }}
+    <!-- Ambient Geometric Ribbon Overlays & Watermark (Matching Screenshot) -->
+    <div class="bg-decorative-wrap">
+        <div class="bg-ribbon-left"></div>
+        <div class="bg-ribbon-left-accent"></div>
+        <div class="bg-ribbon-right"></div>
+        <div class="bg-ribbon-right-accent"></div>
+        
+        <!-- Open Book Watermark Outline in Bottom Left -->
+        <svg class="watermark-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+            <path d="M6 6h10"/>
+            <path d="M6 10h10"/>
+        </svg>
+    </div>
+
+    <!-- Header Bar (Exact match to screenshot top-bar) -->
+    <header class="kiosk-header">
+        <!-- Right side in RTL: App Brand, Branch and Machine Badge -->
+        <div class="header-brand-wrap">
+            <div class="header-app-icon">
+                <i class="fa-solid fa-print"></i>
+            </div>
+            <div class="header-titles">
+                <div class="header-app-name">{{ $appName ?? 'تطبيق طباعة' }}</div>
+                <div class="header-branch-name">
+                    <span>📍</span>
+                    <span>{{ $kiosk->branch?->name['ar'] ?? 'فرع الرياض - حي العليا' }}</span>
                 </div>
             </div>
-            <div class="kiosk-badge">{{ $kiosk->machine_code }}</div>
+            <div class="kiosk-code-pill num-font">{{ $kiosk->machine_code }}</div>
         </div>
 
-        <div class="hardware-stats">
-            <div class="stat-item">
-                <div class="stat-dot"></div>
+        <!-- Left side in RTL: Status Badge & Digital Clock -->
+        <div class="header-stats-wrap">
+            <div class="status-badge online">
+                <div class="status-dot"></div>
                 <span id="machine-status-text">متصلة وجاهزة</span>
             </div>
-            <div class="stat-item">
-                📄 ورق A4: <span id="paper-count" style="color: #fff; margin-right: 4px;">{{ $kiosk->paper_tray_a4_sheets }}</span> ورقة
-            </div>
-            <div class="stat-item">
-                💧 حبر أسود: <span id="toner-count" style="color: #fff; margin-right: 4px;">{{ $kiosk->black_toner_level }}%</span>
-            </div>
-            <div class="clock-time" id="digital-clock">--:--</div>
+
+            <div class="header-clock num-font" id="digital-clock">--:--</div>
         </div>
     </header>
 
-    <!-- Main Stage Container -->
+    <!-- Main Stage -->
     <main class="main-stage">
         <div class="card-stage" id="screen-content">
-            <!-- Stage 1: Waiting Scan (Default) -->
-            <div class="stage-waiting" id="view-waiting">
-                <div class="qr-box-outer">
-                    <div class="scanner-laser"></div>
-                    <div id="qr-container">
-                        {!! $qrSvg !!}
-                    </div>
-                </div>
-                <div style="font-size: 1.15rem; font-weight: 800; color: #64748b; margin-top: 4px; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                    <span>كود الطابعة:</span>
-                    <span style="color: #6366f1; background: rgba(99, 102, 241, 0.12); padding: 2px 10px; border-radius: 6px; border: 1px solid rgba(99, 102, 241, 0.25); font-family: monospace;">{{ $kiosk->machine_code }}</span>
-                </div>
+            <!-- Decorative corner polygons on the card (as in screenshot) -->
+            <div class="card-corner-topleft"></div>
+            <div class="card-corner-bottomright"></div>
+            <div class="card-corner-bottomleft"></div>
+            <div class="card-corner-topright"></div>
 
-                <div>
-                    <h1 class="stage-title">الطباعة الذاتية الفورية</h1>
-                    <p class="stage-sub">
-                        امسح رمز الاستجابة السريعة (QR) بكاميرا هاتفك لبدء ربط جهازك فوراً ورفع مستندك للطباعة.
+            <!-- ================= Stage 1: Waiting Scan View (Screenshot Matching) ================= -->
+            <div class="stage-waiting-grid" id="view-waiting">
+                
+                <!-- Column 1: Main Title, Subtitle, and Feature Badges (Right in RTL) -->
+                <div class="waiting-text-col">
+                    <h1 class="waiting-title">الطباعة الذاتية الفورية</h1>
+                    <p class="waiting-subtitle">
+                        امسح رمز الاستجابة السريعة (QR) بكاميرا هاتفك لبدء ربط جهازك فوراً وتجهيز مستندك للطباعة.
                     </p>
 
-                    <div class="features-pill">
-                        <div class="pill-item">
-                            <div class="pill-icon">📱</div>
-                            <span>ارفع ملفك مباشرة من جوالك (PDF / صور).</span>
+                    <div class="features-list">
+                        <div class="feature-item">
+                            <div class="feature-icon-box">
+                                <i class="fa-solid fa-file-arrow-up"></i>
+                            </div>
+                            <span>ارفع ملفك مباشرة من جوالك (PDF) / صور.</span>
                         </div>
-                        <div class="pill-item">
-                            <div class="pill-icon">⚡</div>
+
+                        <div class="feature-item">
+                            <div class="feature-icon-box">
+                                <i class="fa-solid fa-bolt"></i>
+                            </div>
                             <span>تحكم بخيارات الألوان والوجهين بلمسة واحدة.</span>
                         </div>
-                        <div class="pill-item">
-                            <div class="pill-icon">💳</div>
+
+                        <div class="feature-item">
+                            <div class="feature-icon-box">
+                                <i class="fa-solid fa-credit-card"></i>
+                            </div>
                             <span>ادفع إلكترونياً واستلم أوراقك في ثوانٍ.</span>
                         </div>
                     </div>
                 </div>
+
+                <!-- Column 2: Partner Brand Logo & Machine Code (Center) -->
+                <div class="waiting-middle-col">
+                    <div class="partner-logo-box">
+                        <div class="partner-text-en">
+                            <div class="brand-ar">منصور</div>
+                            <div class="brand-en">Mansour</div>
+                        </div>
+                        <div class="partner-icon-diamond">
+                            <div class="partner-icon-inner">
+                                <i class="fa-solid fa-book-open"></i>
+                            </div>
+                        </div>
+                        <div class="partner-text-ar">
+                            <div class="brand-ar">قرطاسية</div>
+                            <div class="brand-en">stationery</div>
+                        </div>
+                    </div>
+
+                    <div class="machine-code-wrap">
+                        <div class="machine-code-box num-font">
+                            <div>{{ substr($kiosk->machine_code, 0, strrpos($kiosk->machine_code, '-') !== false ? strrpos($kiosk->machine_code, '-') + 1 : 4) }}</div>
+                            <div>{{ substr($kiosk->machine_code, strrpos($kiosk->machine_code, '-') !== false ? strrpos($kiosk->machine_code, '-') + 1 : 4) }}</div>
+                        </div>
+                        <div class="machine-code-label">
+                            كود<br>الطابعة:
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Column 3: The Big QR Code Frame (Left in RTL) -->
+                <div class="waiting-qr-col">
+                    <div class="qr-frame-outer">
+                        <div class="qr-scan-line"></div>
+                        <div id="qr-container" style="width: 100%; height: 100%;">
+                            {!! $qrSvg !!}
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
-            <!-- Stage 2: Connected -->
+            <!-- ================= Stage 2: Connected State ================= -->
             <div class="center-state" id="view-connected" style="display: none;">
-                <div class="pulse-ring">🔗</div>
-                <h1 class="stage-title" style="color: #34d399;">تم ربط هاتفك بنجاح!</h1>
-                <p class="stage-sub" style="font-size: 22px;">
+                <div class="state-big-icon" style="color: #10b981;">
+                    <i class="fa-solid fa-link"></i>
+                </div>
+                <h2 class="state-title" style="color: #059669;">تم ربط هاتفك بنجاح!</h2>
+                <p class="state-subtitle">
                     يرجى الآن اختيار المستند وتحديد إعدادات الطباعة من شاشة جوالك.
                 </p>
-                <div style="font-size: 15px; color: var(--text-muted); display: flex; align-items: center; gap: 8px;">
-                    <div class="stat-dot"></div> بانتظار رفع الملف من الجوال...
+                <div style="font-size: 0.95rem; color: var(--text-muted); display: flex; align-items: center; gap: 8px;">
+                    <div class="status-dot"></div> بانتظار رفع الملف من هاتفك...
                 </div>
             </div>
 
-            <!-- Stage 3: File Uploaded & Processing -->
+            <!-- ================= Stage 3: File Uploaded State ================= -->
             <div class="center-state" id="view-uploaded" style="display: none;">
-                <div class="big-icon">📄</div>
-                <h1 class="stage-title">تم استلام المستند بنجاح</h1>
-                <p class="stage-sub" id="display-filename" style="color: #93c5fd; font-weight: 700; font-size: 20px;">
+                <div class="state-big-icon" style="color: #0284c7;">
+                    <i class="fa-solid fa-file-pdf"></i>
+                </div>
+                <h2 class="state-title">تم استلام المستند بنجاح</h2>
+                <p class="state-subtitle num-font" id="display-filename" style="color: #005bb5; font-weight: 700;">
                     document.pdf
                 </p>
 
-                <div class="info-grid">
-                    <div class="info-card">
-                        <div class="info-label">عدد الصفحات</div>
-                        <div class="info-value" id="info-pages">0</div>
+                <div class="doc-info-grid">
+                    <div class="doc-info-card">
+                        <div class="doc-info-label">عدد الصفحات</div>
+                        <div class="doc-info-value num-font" id="info-pages">0</div>
                     </div>
-                    <div class="info-card">
-                        <div class="info-label">إجمالي الأوراق (A4)</div>
-                        <div class="info-value" id="info-sheets">0</div>
+                    <div class="doc-info-card">
+                        <div class="doc-info-label">إجمالي الأوراق (A4)</div>
+                        <div class="doc-info-value num-font" id="info-sheets">0</div>
                     </div>
-                    <div class="info-card">
-                        <div class="info-label">نوع الطباعة</div>
-                        <div class="info-value" id="info-mode">أبيض وأسود</div>
+                    <div class="doc-info-card">
+                        <div class="doc-info-label">نوع الطباعة</div>
+                        <div class="doc-info-value" id="info-mode">أبيض وأسود</div>
                     </div>
                 </div>
 
-                <div class="price-badge" id="display-price">
+                <div class="doc-price-pill num-font" id="display-price">
                     0.00 ر.س
                 </div>
             </div>
 
-            <!-- Stage 4: Awaiting Payment -->
+            <!-- ================= Stage 4: Awaiting Payment ================= -->
             <div class="center-state" id="view-payment" style="display: none;">
-                <div class="pulse-ring" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b;">💳</div>
-                <h1 class="stage-title" style="color: #fbbf24;">برجاء إتمام الدفع عبر الجوال</h1>
-                <p class="stage-sub" style="font-size: 20px;">
-                    إجمالي المبلغ المطلوب: <strong id="pay-total-amount" style="color: #fff;">0.00 ر.س</strong>
-                </p>
-                <div style="display: flex; gap: 15px; font-size: 30px; margin-top: 10px;">
-                    <span>Pay</span> <span>💳 Mada</span> <span>💳 Visa</span>
+                <div class="state-big-icon" style="color: #f59e0b;">
+                    <i class="fa-solid fa-credit-card"></i>
                 </div>
-                <div style="font-size: 15px; color: var(--text-muted); margin-top: 15px;">
+                <h2 class="state-title" style="color: #d97706;">برجاء إتمام الدفع عبر الجوال</h2>
+                <p class="state-subtitle">
+                    إجمالي المبلغ المطلوب: <strong id="pay-total-amount" class="num-font" style="color: #005bb5; font-size: 1.4rem;">0.00 ر.س</strong>
+                </p>
+                <div style="display: flex; gap: 16px; font-size: 26px; color: #475569; margin: 10px 0;">
+                    <span><i class="fa-brands fa-apple-pay"></i></span>
+                    <span><i class="fa-solid fa-credit-card"></i> مدى</span>
+                    <span><i class="fa-brands fa-cc-visa"></i></span>
+                </div>
+                <div style="font-size: 0.9rem; color: var(--text-muted); margin-top: 10px;">
                     بمجرد اكتمال الدفع ستبدأ الطابعة بسحب الأوراق فوراً...
                 </div>
             </div>
 
-            <!-- Stage 5: Printing -->
+            <!-- ================= Stage 5: Printing ================= -->
             <div class="center-state" id="view-printing" style="display: none;">
-                <div class="big-icon" style="animation: float 2s infinite;">🖨️</div>
-                <h1 class="stage-title" style="color: #60a5fa;">جاري طباعة مستندك الآن...</h1>
-                <p class="stage-sub" style="font-size: 20px;">
-                    فضلاً انتظر، لا تغادر الكشك حتى خروج جميع الأوراق.
+                <div class="state-big-icon" style="color: #005bb5; animation: bounce-icon 2s infinite;">
+                    <i class="fa-solid fa-print"></i>
+                </div>
+                <h2 class="state-title">جاري طباعة مستندك الآن...</h2>
+                <p class="state-subtitle">
+                    فضلاً انتظر، لا تغادر الكشك حتى خروج جميع الأوراق من مخرج الطابعة.
                 </p>
                 
                 <div class="progress-bar-container">
                     <div class="progress-bar-fill" id="print-progress"></div>
                 </div>
-                <div style="font-size: 15px; color: var(--text-muted); margin-top: 10px;" id="print-percent">
+                <div style="font-size: 1.1rem; font-weight: 800; color: #005bb5; margin-top: 8px;" class="num-font" id="print-percent">
                     0%
                 </div>
-                <div id="print-status-note" style="font-size: 14px; color: #93c5fd; margin-top: 8px;">
+                <div id="print-status-note" style="font-size: 0.9rem; color: #0284c7; margin-top: 6px;">
                     ⚡ تم إرسال أمر الطباعة التلقائي إلى الطابعة المتصلة...
                 </div>
             </div>
@@ -645,56 +966,66 @@
             <!-- Hidden Iframe for Direct Silent Hardware Printing -->
             <iframe id="kiosk-print-frame" style="position: fixed; right: 0; bottom: 0; width: 0; height: 0; border: 0; opacity: 0; pointer-events: none;"></iframe>
 
-            <!-- Stage 6: Completed -->
+            <!-- ================= Stage 6: Completed ================= -->
             <div class="center-state" id="view-completed" style="display: none;">
-                <div class="big-icon">🎉</div>
-                <h1 class="stage-title" style="color: #34d399;">تمت الطباعة بنجاح!</h1>
-                <p class="stage-sub" style="font-size: 22px; font-weight: 700; color: #fff;">
+                <div class="state-big-icon" style="color: #10b981;">
+                    <i class="fa-solid fa-circle-check"></i>
+                </div>
+                <h2 class="state-title" style="color: #059669;">تمت الطباعة بنجاح!</h2>
+                <p class="state-subtitle" style="font-weight: 700;">
                     فضلاً استلم أوراقك من مخرج الطابعة بالأسفل.
                 </p>
-                <div style="font-size: 14px; color: var(--text-muted); margin: 15px 0;">
+                <div style="font-size: 0.88rem; color: var(--text-muted); margin: 10px 0 20px;">
                     🛡️ حفاظاً على خصوصيتك، تم حذف الملف تلقائياً من خوادمنا.
                 </div>
-                <button type="button" id="btn-return-home" class="btn-continue" onclick="handleReturnHome()" style="margin-top: 15px; max-width: 340px; width: 100%; font-size: 18px; padding: 14px 32px; display: inline-flex; align-items: center; justify-content: center; gap: 10px;">
-                    🏠 العودة للصفحة الرئيسية
+                <button type="button" id="btn-return-home" class="btn-continue" onclick="handleReturnHome()">
+                    <i class="fa-solid fa-house" style="margin-left: 8px;"></i>
+                    العودة للصفحة الرئيسية
                 </button>
             </div>
 
         </div>
     </main>
 
-    <!-- Footer Bar -->
-    <footer class="footer">
-        <div>
-            📞 في حال وجود أي استفسار أو مشكلة، تواصل معنا: {{ \App\Models\SystemSetting::where('key', 'support_phone')->first()?->value['ar'] ?? '+966500000000' }}
+    <!-- Footer Bar (Exact match to screenshot bottom bar) -->
+    <footer class="kiosk-footer">
+        <!-- Right side in RTL: Support Phone -->
+        <div class="footer-support">
+            <i class="fa-solid fa-phone"></i>
+            <span>في حال وجود أي استفسار أو مشكلة، تواصل معنا:</span>
+            <span class="num-font" style="letter-spacing: 0.5px;">{{ $supportPhone ?? '+966500000000' }}</span>
         </div>
-        <div>
-            ⚡ مدعوم بنظام الطباعة الفورية الذاتية الذكي
+
+        <!-- Left side in RTL: Operational note -->
+        <div class="footer-note">
+            <i class="fa-solid fa-bolt"></i>
+            <span>محتوى يتطلب اتصال بالإنترنت للحصول على نتائج دقيقة</span>
         </div>
     </footer>
 
     <!-- Inactivity Timeout Modal -->
     <div id="inactivity-modal" class="modal-overlay">
         <div class="modal-card">
-            <div class="modal-icon-badge">⏳</div>
-            <h2 class="modal-title">هل تريد المزيد من الوقت؟</h2>
-            <p class="modal-description">
+            <div style="font-size: 42px; color: #f59e0b; margin-bottom: 12px;">⏳</div>
+            <h3 style="font-size: 1.4rem; font-weight: 800; color: #004085; margin-bottom: 8px;">هل تريد المزيد من الوقت؟</h3>
+            <p style="font-size: 0.95rem; color: var(--text-body); line-height: 1.6;">
                 لوحظ عدم وجود نشاط على الشاشة أو هاتفك. للحفاظ على خصوصية بياناتك وإتاحة الكشك للعميل التالي، ستنتهي الجلسة تلقائياً.
             </p>
-            <div class="countdown-ring">
-                ⏳ متبقي <span id="inactivity-countdown" class="countdown-number">10</span> ثوانٍ للإلغاء
+            <div class="modal-countdown num-font">
+                ⏳ متبقي <span id="inactivity-countdown">10</span> ثوانٍ للإلغاء
             </div>
             <div class="modal-actions">
                 <button type="button" class="btn-continue" onclick="handleKeepAlive()">
-                    ✅ نعم، أحتاج وقتاً إضافياً
+                    نعم، أحتاج وقتاً إضافياً
                 </button>
                 <button type="button" class="btn-cancel" onclick="handleTimeoutCancel()">
-                    ❌ إنهاء والعودة للرئيسية
+                    إنهاء والعودة للرئيسية
                 </button>
             </div>
         </div>
     </div>
 
+    <!-- Interactive Script Logic -->
     <script>
         const machineCode = "{{ $kiosk->machine_code }}";
         let currentStatus = null;
@@ -702,26 +1033,19 @@
         let pollInterval = null;
         let printAnimationInterval = null;
 
-        // Inactivity Watcher (30s Idle Limit)
+        // Inactivity Watcher (60s Idle Limit)
         let idleSeconds = 0;
         let isTimeoutModalOpen = false;
         let modalCountdownInterval = null;
 
-        // Reset idle on user touch/click on screen
         window.addEventListener('click', () => {
-            if (!isTimeoutModalOpen) {
-                idleSeconds = 0;
-            }
+            if (!isTimeoutModalOpen) idleSeconds = 0;
         });
         window.addEventListener('touchstart', () => {
-            if (!isTimeoutModalOpen) {
-                idleSeconds = 0;
-            }
+            if (!isTimeoutModalOpen) idleSeconds = 0;
         });
 
-        // 1-second ticker for inactivity
         setInterval(() => {
-            // Only monitor inactivity in active customer stages
             if (['connected', 'file_uploaded', 'awaiting_payment'].includes(currentStatus)) {
                 idleSeconds++;
                 if (idleSeconds >= 60 && !isTimeoutModalOpen) {
@@ -729,9 +1053,7 @@
                 }
             } else {
                 idleSeconds = 0;
-                if (isTimeoutModalOpen) {
-                    hideInactivityModal();
-                }
+                if (isTimeoutModalOpen) hideInactivityModal();
             }
         }, 1000);
 
@@ -761,12 +1083,10 @@
             document.getElementById('inactivity-modal').style.display = 'none';
         }
 
-        // Customer clicked: Yes, I need more time
         function handleKeepAlive() {
             hideInactivityModal();
             idleSeconds = 0;
 
-            // Notify backend API
             fetch('/api/v1/kiosks/extend-session', {
                 method: 'POST',
                 headers: {
@@ -777,7 +1097,6 @@
             }).catch(err => console.log('Extend session ping error', err));
         }
 
-        // Timeout expired or user clicked: Cancel & Return to QR
         function handleTimeoutCancel() {
             hideInactivityModal();
             idleSeconds = 0;
@@ -799,7 +1118,7 @@
             });
         }
 
-        // Digital Clock
+        // Digital Clock (HH:mm)
         function updateClock() {
             const now = new Date();
             const hours = String(now.getHours()).padStart(2, '0');
@@ -816,11 +1135,8 @@
 
             if (statusChanged) {
                 idleSeconds = 0;
-                if (isTimeoutModalOpen) {
-                    hideInactivityModal();
-                }
+                if (isTimeoutModalOpen) hideInactivityModal();
 
-                // Hide all views
                 document.getElementById('view-waiting').style.display = 'none';
                 document.getElementById('view-connected').style.display = 'none';
                 document.getElementById('view-uploaded').style.display = 'none';
@@ -829,7 +1145,7 @@
                 document.getElementById('view-completed').style.display = 'none';
 
                 if (status === 'waiting_scan') {
-                    document.getElementById('view-waiting').style.display = 'flex';
+                    document.getElementById('view-waiting').style.display = 'grid';
                 } else if (status === 'connected') {
                     document.getElementById('view-connected').style.display = 'flex';
                 } else if (status === 'file_uploaded') {
@@ -850,7 +1166,6 @@
                 hasTriggeredPrintForToken = null;
             }
 
-            // Always update dynamic content in real-time even if status hasn't changed
             if (status === 'waiting_scan' && data && data.qr_svg) {
                 document.getElementById('qr-container').innerHTML = data.qr_svg;
             } else if (status === 'file_uploaded' && data && data.session) {
@@ -867,16 +1182,13 @@
 
         let hasTriggeredPrintForToken = null;
 
-        // Direct Browser/Kiosk Hardware Printing Trigger
         function triggerBrowserPrint(fileUrl) {
             if (!fileUrl) {
                 console.warn('Physical print: no file_url provided');
                 return;
             }
 
-            if (hasTriggeredPrintForToken === currentSessionToken) {
-                return;
-            }
+            if (hasTriggeredPrintForToken === currentSessionToken) return;
             hasTriggeredPrintForToken = currentSessionToken;
 
             console.log('Sending direct print command to kiosk printer for:', fileUrl);
@@ -898,63 +1210,54 @@
 
             frame.src = fileUrl;
 
-            let printFired = false;
-            const firePrint = () => {
-                if (printFired) return;
-                printFired = true;
-                setTimeout(() => {
-                    try {
+            frame.onload = function() {
+                try {
+                    setTimeout(() => {
+                        console.log('Triggering iframe window.print()');
                         frame.contentWindow.focus();
                         frame.contentWindow.print();
-                    } catch (e) {
-                        try {
-                            window.frames['kiosk-print-frame'].focus();
-                            window.frames['kiosk-print-frame'].print();
-                        } catch (e2) {
-                            console.error('Print trigger failed', e2);
-                        }
-                    }
-                }, 600);
+                    }, 500);
+                } catch (e) {
+                    console.error('Error invoking silent frame print:', e);
+                }
             };
-
-            frame.onload = firePrint;
-            // Backup timer in case PDF viewer plugin does not trigger onload
-            setTimeout(firePrint, 2200);
         }
 
-        // Simulate Smooth Printing Progress
         function startPrintSimulation(token) {
-            let progress = 0;
-            const bar = document.getElementById('print-progress');
-            const percentText = document.getElementById('print-percent');
             clearInterval(printAnimationInterval);
+            let percent = 0;
+            const bar = document.getElementById('print-progress');
+            const txt = document.getElementById('print-percent');
+            const note = document.getElementById('print-status-note');
+
+            bar.style.width = '0%';
+            txt.innerText = '0%';
+            note.innerText = '⚡ جاري استقبال أمر الطباعة وسحب الأوراق من الطابعة...';
 
             printAnimationInterval = setInterval(() => {
-                progress += 5;
-                if (progress > 100) {
-                    progress = 100;
-                    clearInterval(printAnimationInterval);
-                    // Move to completed
-                    setTimeout(() => {
-                        renderState('completed', { session: { token: token } });
-                    }, 500);
+                percent += 5;
+                if (percent > 100) percent = 100;
+
+                bar.style.width = `${percent}%`;
+                txt.innerText = `${percent}%`;
+
+                if (percent === 30) {
+                    note.innerText = '🖨️ الطابعة تقوم بمعالجة الصفحات وسحب الورق...';
+                } else if (percent === 70) {
+                    note.innerText = '📄 جاري إخراج الأوراق المطبوعة...';
                 }
-                bar.style.width = progress + '%';
-                percentText.innerText = progress + '%';
-            }, 250);
+
+                if (percent >= 100) {
+                    clearInterval(printAnimationInterval);
+                    setTimeout(() => {
+                        finishPrintingAndReset(token);
+                    }, 1200);
+                }
+            }, 300);
         }
 
-        // Manual Return to Home Screen (Only when customer clicks the button)
-        function handleReturnHome() {
-            const tokenToReset = currentSessionToken;
-            const btn = document.getElementById('btn-return-home');
-            if (btn) {
-                btn.innerText = '⏳ جاري العودة...';
-                btn.style.opacity = '0.7';
-                btn.disabled = true;
-            }
-
-            fetch(`/kiosk/complete-reset/${tokenToReset}`, {
+        function finishPrintingAndReset(token) {
+            fetch(`/kiosk/complete-reset/${token}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -963,65 +1266,69 @@
                 body: JSON.stringify({ status: 'completed' })
             })
             .then(res => res.json())
-            .then((data) => {
-                if (data && data.new_token) {
-                    currentSessionToken = data.new_token;
-                }
-                currentStatus = null;
-                renderState('waiting_scan', data);
-
-                // Explicit guarantee to switch cards
-                document.getElementById('view-completed').style.display = 'none';
-                document.getElementById('view-waiting').style.display = 'flex';
-                if (data && data.qr_svg) {
-                    document.getElementById('qr-container').innerHTML = data.qr_svg;
-                }
-                if (btn) {
-                    btn.innerText = '🏠 العودة للصفحة الرئيسية';
-                    btn.style.opacity = '1';
-                    btn.disabled = false;
-                }
+            .then(data => {
+                renderState('completed', data);
+                setTimeout(() => {
+                    handleReturnHome();
+                }, 8000);
             })
-            .catch(() => {
-                window.location.reload();
+            .catch(err => {
+                console.error('Complete reset error', err);
+                renderState('completed');
+                setTimeout(() => {
+                    handleReturnHome();
+                }, 8000);
             });
         }
 
-        // Polling function
-        function fetchStatus() {
-            // While customer is viewing the completion screen, do not allow polling to overwrite it
-            if (currentStatus === 'completed') {
-                return;
-            }
-
-            fetch(`/api/kiosks/${machineCode}/screen-status`)
-                .then(res => res.json())
-                .then(data => {
-                    // Check again if completion animation started while request was in-flight
-                    if (currentStatus === 'completed') {
-                        return;
-                    }
-
-                    // Update header supplies
-                    document.getElementById('paper-count').innerText = data.paper_a4;
-                    document.getElementById('toner-count').innerText = data.black_toner + '%';
-                    
-                    if (data.session) {
-                        if (currentSessionToken !== data.session.token || data.session.status !== currentStatus) {
-                            idleSeconds = 0;
-                            if (isTimeoutModalOpen) {
-                                hideInactivityModal();
-                            }
-                        }
-                        currentSessionToken = data.session.token;
-                        renderState(data.session.status, data);
-                    }
-                })
-                .catch(err => console.error('Status poll error', err));
+        function handleReturnHome() {
+            renderState('waiting_scan', {
+                session: null,
+                qr_svg: null
+            });
+            fetchStatus();
         }
 
-        // Start polling every 1200ms
-        pollInterval = setInterval(fetchStatus, 1200);
+        async function fetchStatus() {
+            try {
+                const res = await fetch(`/api/kiosks/${machineCode}/screen-status`);
+                if (!res.ok) return;
+                const data = await res.json();
+
+                if (data.kiosk) {
+                    const statusDot = document.querySelector('.status-dot');
+                    const statusText = document.getElementById('machine-status-text');
+                    if (data.kiosk.status === 'online') {
+                        statusText.innerText = 'متصلة وجاهزة';
+                    } else if (data.kiosk.status === 'busy') {
+                        statusText.innerText = 'الماكينة قيد الاستخدام';
+                    } else {
+                        statusText.innerText = 'خارج الخدمة';
+                    }
+
+                    const paperEl = document.getElementById('paper-count');
+                    if (paperEl && data.kiosk.paper_tray_a4_sheets !== undefined) {
+                        paperEl.innerText = data.kiosk.paper_tray_a4_sheets;
+                    }
+                    const tonerEl = document.getElementById('toner-count');
+                    if (tonerEl && data.kiosk.black_toner_level !== undefined) {
+                        tonerEl.innerText = `${data.kiosk.black_toner_level}%`;
+                    }
+                }
+
+                if (data.session) {
+                    currentSessionToken = data.session.token;
+                    renderState(data.session.status, data);
+                } else {
+                    renderState('waiting_scan', data);
+                }
+            } catch (err) {
+                console.warn('Polling error:', err);
+            }
+        }
+
+        pollInterval = setInterval(fetchStatus, 2000);
+        fetchStatus();
     </script>
 </body>
 </html>

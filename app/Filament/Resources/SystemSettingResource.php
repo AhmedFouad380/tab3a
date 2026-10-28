@@ -83,12 +83,13 @@ class SystemSettingResource extends Resource
                             ->default('string')
                             ->reactive()
                             ->required(),
-                        Forms\Components\FileUpload::make('value.ar')
+                        Forms\Components\FileUpload::make('image_file')
                             ->label('رفع الصورة / اللوجو')
                             ->image()
                             ->directory('settings')
                             ->visibility('public')
                             ->visible(fn (Forms\Get $get) => $get('type') === 'image' || $get('key') === 'app_logo')
+                            ->dehydrated(false)
                             ->columnSpanFull(),
                         Forms\Components\Textarea::make('value.ar')
                             ->label('القيمة (عربي / القيمة العامة)')

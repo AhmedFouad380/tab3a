@@ -40,8 +40,8 @@ class KioskStickerController extends Controller
             ->margin(1)
             ->generate($kiosk->machine_code);
 
-        $appName = SystemSetting::where('key', 'app_name')->first()?->value['ar'] ?? 'منصة طباعة';
-        $supportPhone = SystemSetting::where('key', 'support_phone')->first()?->value['ar'] ?? '+966500000000';
+        $appName = SystemSetting::getSetting('app_name', 'ar', 'منصة طباعة');
+        $supportPhone = SystemSetting::getSetting('support_phone', 'ar', '+966500000000');
 
         return view('kiosk.sticker', compact('kiosk', 'qrSvg', 'connectUrl', 'appName', 'supportPhone'));
     }

@@ -8,8 +8,8 @@ Route::get('/', function () {
 });
 
 Route::get('/landing', function () {
-    $appName = rescue(fn () => SystemSetting::where('key', 'app_name')->first()?->value['ar'] ?? 'منصة طباعة', 'منصة طباعة');
-    $supportPhone = rescue(fn () => SystemSetting::where('key', 'support_phone')->first()?->value['ar'] ?? '+966500000000', '+966500000000');
+    $appName = rescue(fn () => SystemSetting::getSetting('app_name', 'ar', 'منصة طباعة'), 'منصة طباعة');
+    $supportPhone = rescue(fn () => SystemSetting::getSetting('support_phone', 'ar', '+966500000000'), '+966500000000');
     $branchesCount = rescue(fn () => Branch::count(), 6);
     $ordersCount = rescue(fn () => Order::count(), 1450);
     $kiosksCount = rescue(fn () => KioskMachine::count(), 18);
