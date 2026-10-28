@@ -149,7 +149,7 @@ class KioskMachineResource extends Resource
                         Forms\Components\TextInput::make('max_file_size_mb')
                             ->label('الحد الأقصى لحجم الملف')
                             ->numeric()
-                            ->placeholder(fn () => SystemSetting::where('key', 'instant_print_max_file_size')->first()?->value['ar'] ?? '30')
+                            ->placeholder(fn () => (string) (SystemSetting::getSetting('max_file_size_mb', 'ar') ?? SystemSetting::getSetting('instant_print_max_file_size', 'ar', '50')))
                             ->suffix('ميجابايت'),
                         Forms\Components\TextInput::make('min_order_price')
                             ->label('الحد الأدنى لقيمة العملية')

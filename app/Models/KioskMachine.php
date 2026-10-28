@@ -85,9 +85,12 @@ class KioskMachine extends Model
             return (int) $this->max_file_size_mb;
         }
 
-        $globalSetting = SystemSetting::where('key', 'instant_print_max_file_size')->first();
+        $globalSetting = SystemSetting::getSetting('max_file_size_mb', 'ar');
+        if (! $globalSetting) {
+            $globalSetting = SystemSetting::getSetting('instant_print_max_file_size', 'ar', 50);
+        }
 
-        return (int) ($globalSetting?->value['ar'] ?? 30);
+        return (int) $globalSetting;
     }
 
     /**

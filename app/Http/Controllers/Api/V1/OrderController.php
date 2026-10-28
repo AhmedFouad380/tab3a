@@ -108,6 +108,8 @@ class OrderController extends BaseApiController
             ->where('color_mode', $colorMode)
             ->where('side_mode', $sideMode)
             ->where('is_active', true)
+            ->whereIn('service_type', ['self_printing', 'all'])
+            ->orderByRaw("CASE WHEN service_type = 'self_printing' THEN 1 ELSE 2 END")
             ->first();
 
         $unitPrice = $rule ? (float) $rule->price_per_page : ($colorMode === 'color' ? 1.50 : 0.50);
@@ -271,6 +273,8 @@ class OrderController extends BaseApiController
             ->where('color_mode', $colorMode)
             ->where('side_mode', $sideMode)
             ->where('is_active', true)
+            ->whereIn('service_type', ['pre_order', 'all'])
+            ->orderByRaw("CASE WHEN service_type = 'pre_order' THEN 1 ELSE 2 END")
             ->first();
 
         $unitPrice = $rule ? (float) $rule->price_per_page : ($colorMode === 'color' ? 1.50 : 0.50);

@@ -2,13 +2,42 @@
 
 namespace App\Http\Requests\Api\V1;
 
+use App\Models\KioskMachine;
+use App\Models\KioskSession;
 use App\Models\SystemSetting;
 
 class FileUploadRequest extends BaseApiRequest
 {
+    /**
+     * Determine the effective max file size in MB.
+     */
+    protected function resolveMaxFileSizeMb(): int
+    {
+        if ($this->filled('kiosk_machine_id')) {
+            $kiosk = KioskMachine::find($this->kiosk_machine_id);
+            if ($kiosk) {
+                return $kiosk->getEffectiveMaxFileSizeMb();
+            }
+        }
+
+        if ($this->filled('session_token')) {
+            $session = KioskSession::where('session_token', $this->session_token)->first();
+            if ($session?->kiosk) {
+                return $session->kiosk->getEffectiveMaxFileSizeMb();
+            }
+        }
+
+        $globalSetting = SystemSetting::getSetting('max_file_size_mb', 'ar');
+        if (! $globalSetting) {
+            $globalSetting = SystemSetting::getSetting('instant_print_max_file_size', 'ar', 50);
+        }
+
+        return (int) $globalSetting;
+    }
+
     public function rules(): array
     {
-        $maxMb = (int) (SystemSetting::where('key', 'instant_print_max_file_size')->first()?->value['ar'] ?? 30);
+        $maxMb = $this->resolveMaxFileSizeMb();
         $maxKb = $maxMb * 1024;
 
         return [
@@ -23,7 +52,7 @@ class FileUploadRequest extends BaseApiRequest
 
     public function messages(): array
     {
-        $maxMb = (int) (SystemSetting::where('key', 'instant_print_max_file_size')->first()?->value['ar'] ?? 30);
+        $maxMb = $this->resolveMaxFileSizeMb();
 
         return [
             'file.max' => $this->getLocale() === 'en'

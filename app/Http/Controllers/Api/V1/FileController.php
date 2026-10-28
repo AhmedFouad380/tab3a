@@ -146,12 +146,35 @@ class FileController extends BaseApiController
         $sheetsPerCopy = $sideMode === 'double_sided' ? (int) ceil($pagesToPrint / 2) : $pagesToPrint;
         $totalSheets = $sheetsPerCopy * $copies;
 
-        // Find pricing rule
-        $rule = PricingRule::where('paper_size', $paperSize)
+        // Check if calculating for kiosk / self-printing or pre-order
+        $kioskSession = null;
+        $kiosk = null;
+        if ($request->filled('session_token')) {
+            $kioskSession = KioskSession::where('session_token', $request->session_token)->first();
+            $kiosk = $kioskSession?->kiosk;
+        } elseif ($request->filled('kiosk_machine_id')) {
+            $kioskSession = KioskSession::where('kiosk_machine_id', $request->kiosk_machine_id)
+                ->whereIn('status', ['waiting_scan', 'connected', 'file_uploaded', 'awaiting_payment'])
+                ->latest()
+                ->first();
+            $kiosk = $kioskSession?->kiosk ?? KioskMachine::find($request->kiosk_machine_id);
+        }
+
+        // Find pricing rule matching service_type
+        $isKiosk = (bool) $kiosk;
+        $ruleQuery = PricingRule::where('paper_size', $paperSize)
             ->where('color_mode', $colorMode)
             ->where('side_mode', $sideMode)
-            ->where('is_active', true)
-            ->first();
+            ->where('is_active', true);
+
+        if ($isKiosk) {
+            $ruleQuery->whereIn('service_type', ['self_printing', 'all'])
+                ->orderByRaw("CASE WHEN service_type = 'self_printing' THEN 1 ELSE 2 END");
+        } else {
+            $ruleQuery->whereIn('service_type', ['pre_order', 'all'])
+                ->orderByRaw("CASE WHEN service_type = 'pre_order' THEN 1 ELSE 2 END");
+        }
+        $rule = $ruleQuery->first();
 
         $unitPricePerPage = $rule ? (float) $rule->price_per_page : ($colorMode === 'color' ? 1.50 : 0.50);
         $printSubtotal = ($unitPricePerPage * $pagesToPrint) * $copies;
@@ -167,20 +190,6 @@ class FileController extends BaseApiController
 
         $subtotal = $printSubtotal + $finishingPrice;
 
-        // Sync with Kiosk Screen if session or machine is provided
-        $kioskSession = null;
-        $kiosk = null;
-        if ($request->filled('session_token')) {
-            $kioskSession = KioskSession::where('session_token', $request->session_token)->first();
-            $kiosk = $kioskSession?->kiosk;
-        } elseif ($request->filled('kiosk_machine_id')) {
-            $kioskSession = KioskSession::where('kiosk_machine_id', $request->kiosk_machine_id)
-                ->whereIn('status', ['waiting_scan', 'connected', 'file_uploaded', 'awaiting_payment'])
-                ->latest()
-                ->first();
-            $kiosk = $kioskSession?->kiosk ?? KioskMachine::find($request->kiosk_machine_id);
-        }
-
         // Apply minimum order price for kiosk / self-printing
         if ($kiosk) {
             $minPrice = $kiosk->getEffectiveMinOrderPrice();
@@ -189,8 +198,9 @@ class FileController extends BaseApiController
             }
         }
 
-        // Tax (VAT 15%)
-        $taxRate = 0.15;
+        // Tax (VAT from system settings or 15%)
+        $taxPercentage = (float) (SystemSetting::getSetting('tax_rate_percentage', 'ar', 15));
+        $taxRate = $taxPercentage > 0 ? ($taxPercentage / 100) : 0.15;
         $taxAmount = round($subtotal * $taxRate, 2);
         $totalAmount = round($subtotal + $taxAmount, 2);
 
