@@ -49,7 +49,10 @@ class Admin extends Authenticatable implements FilamentUser
     protected static function booted(): void
     {
         static::saved(function (Admin $admin) {
-            if ($admin->role && ! $admin->hasRole($admin->role)) {
+            $firstRole = $admin->roles()->first();
+            if ($firstRole && $admin->role !== $firstRole->name) {
+                $admin->updateQuietly(['role' => $firstRole->name]);
+            } elseif ($admin->role && ! $admin->hasRole($admin->role)) {
                 $role = Role::firstOrCreate([
                     'name' => $admin->role,
                     'guard_name' => 'admin',
