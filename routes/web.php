@@ -41,3 +41,15 @@ Route::post('/kiosk-session/{token}/upload', [KioskScreenController::class, 'mob
 Route::post('/kiosk-session/{token}/pay', [KioskScreenController::class, 'mobilePay'])->name('kiosk.mobile.pay');
 Route::post('/kiosk/complete-reset/{token}', [KioskScreenController::class, 'completeAndReset'])->name('kiosk.reset');
 Route::get('/api/kiosks/{machine_code}/screen-status', [KioskScreenController::class, 'screenStatus'])->name('api.kiosk.screen.status');
+
+// Public Legal & Store Compliance Pages (Apple App Store & Google Play)
+use App\Http\Controllers\AccountDeletionController;
+
+Route::view('/privacy', 'privacy')->name('privacy');
+Route::view('/privacy-policy', 'privacy')->name('privacy.policy');
+
+Route::get('/delete-account', [AccountDeletionController::class, 'show'])->name('account.delete');
+Route::get('/delete_account', fn () => redirect()->route('account.delete'));
+Route::post('/delete-account/send-otp', [AccountDeletionController::class, 'sendOtp'])->name('account.delete.send-otp');
+Route::post('/delete-account/confirm', [AccountDeletionController::class, 'confirmDelete'])->name('account.delete.confirm');
+Route::post('/delete-account/request', [AccountDeletionController::class, 'submitRequest'])->name('account.delete.request');

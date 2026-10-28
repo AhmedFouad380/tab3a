@@ -1325,9 +1325,11 @@
                 </div>
 
                 <div class="footer-col">
-                    <h4>المساعدة والتواصل</h4>
+                    <h4>الخصوصية والسياسات</h4>
                     <ul>
-                        <li><a href="tel:{{ $supportPhone ?? '+966500000000' }}"><i class="fa-solid fa-headset" style="margin-left: 8px;"></i>الدعم الفني المباشر</a></li>
+                        <li><a href="{{ url('/privacy') }}"><i class="fa-solid fa-shield-halved" style="margin-left: 6px;"></i>سياسة الخصوصية</a></li>
+                        <li><a href="{{ url('/delete-account') }}" style="color: #f87171;"><i class="fa-solid fa-user-xmark" style="margin-left: 6px;"></i>حذف الحساب والبيانات</a></li>
+                        <li><a href="tel:{{ $supportPhone ?? '+966500000000' }}"><i class="fa-solid fa-headset" style="margin-left: 6px;"></i>الدعم الفني المباشر</a></li>
                         <li><span style="color: var(--text-muted); font-size: 0.88rem;">متاح يومياً 24/7 لخدمتكم</span></li>
                     </ul>
                 </div>
@@ -1337,8 +1339,16 @@
                 <div>
                     جميع الحقوق محفوظة &copy; {{ date('Y') }} {{ $appName ?? 'منصة طباعة' }}
                 </div>
-                <div style="display: flex; gap: 1.5rem;">
-                    <a href="{{ url('/admin/login') }}" style="color: #38bdf8; text-decoration: none; font-weight: 600;">
+                <div style="display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap;">
+                    <a href="{{ url('/privacy') }}" style="color: var(--text-secondary); text-decoration: none; font-size: 0.9rem;">
+                        سياسة الخصوصية
+                    </a>
+                    <span style="color: var(--border-glass);">|</span>
+                    <a href="{{ url('/delete-account') }}" style="color: #f87171; text-decoration: none; font-size: 0.9rem;">
+                        حذف الحساب
+                    </a>
+                    <span style="color: var(--border-glass);">|</span>
+                    <a href="{{ url('/admin/login') }}" style="color: #38bdf8; text-decoration: none; font-weight: 600; font-size: 0.9rem;">
                         <i class="fa-solid fa-lock" style="margin-left: 5px;"></i>
                         دخول النظام
                     </a>
