@@ -29,4 +29,13 @@ class EditOrder extends EditRecord
             Actions\DeleteAction::make(),
         ];
     }
+
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        if ($this->record->payment_status === 'paid') {
+            $data['payment_status'] = 'paid';
+        }
+
+        return $data;
+    }
 }

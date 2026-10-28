@@ -182,6 +182,8 @@ class OrderResource extends Resource
                                         'refunded' => 'مسترجع',
                                         'failed' => 'فشلت العملية',
                                     ])
+                                    ->disabled(fn (?Order $record): bool => $record?->payment_status === 'paid')
+                                    ->helperText(fn (?Order $record): ?string => $record?->payment_status === 'paid' ? 'الطلب مدفوع ومؤكد، لا يمكن تغيير حالة الدفع.' : null)
                                     ->required(),
                                 Forms\Components\TextInput::make('payment_method')
                                     ->label('وسيلة الدفع')
