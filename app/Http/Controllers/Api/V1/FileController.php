@@ -9,6 +9,7 @@ use App\Models\FinishingOption;
 use App\Models\KioskMachine;
 use App\Models\KioskSession;
 use App\Models\PricingRule;
+use App\Models\SystemSetting;
 use Illuminate\Http\JsonResponse;
 use Smalot\PdfParser\Parser;
 

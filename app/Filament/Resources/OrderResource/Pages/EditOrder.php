@@ -36,6 +36,13 @@ class EditOrder extends EditRecord
             $data['payment_status'] = 'paid';
         }
 
+        if ($this->record->status === 'completed' && $this->record->payment_status === 'paid') {
+            $data['status'] = 'completed';
+            $data['subtotal'] = $this->record->subtotal;
+            $data['tax_amount'] = $this->record->tax_amount;
+            $data['total_amount'] = $this->record->total_amount;
+        }
+
         return $data;
     }
 }

@@ -162,6 +162,9 @@ class OrderResource extends Resource
                 Forms\Components\Group::make()
                     ->schema([
                         Forms\Components\Section::make('الحالة والدفع')
+                            ->description(fn (?Order $record): ?string => ($record?->status === 'completed' && $record?->payment_status === 'paid')
+                                ? 'تم اكتمال ودفع الطلب، جميع الحقول مقفلة ولا يمكن التعديل عليها.'
+                                : null)
                             ->schema([
                                 Forms\Components\Select::make('status')
                                     ->label('حالة الطلب')
@@ -173,6 +176,7 @@ class OrderResource extends Resource
                                         'completed' => 'مكتمل ومستلم (Completed)',
                                         'cancelled' => 'ملغي (Cancelled)',
                                     ])
+                                    ->disabled(fn (?Order $record): bool => $record?->status === 'completed' && $record?->payment_status === 'paid')
                                     ->required(),
                                 Forms\Components\Select::make('payment_status')
                                     ->label('حالة الدفع')
@@ -191,15 +195,18 @@ class OrderResource extends Resource
                                 Forms\Components\TextInput::make('subtotal')
                                     ->label('المجموع الفرعي')
                                     ->numeric()
-                                    ->prefix('SAR'),
+                                    ->prefix('SAR')
+                                    ->disabled(fn (?Order $record): bool => $record?->status === 'completed' && $record?->payment_status === 'paid'),
                                 Forms\Components\TextInput::make('tax_amount')
                                     ->label('ضريبة القيمة المضافة (VAT)')
                                     ->numeric()
-                                    ->prefix('SAR'),
+                                    ->prefix('SAR')
+                                    ->disabled(fn (?Order $record): bool => $record?->status === 'completed' && $record?->payment_status === 'paid'),
                                 Forms\Components\TextInput::make('total_amount')
                                     ->label('الإجمالي النهائي')
                                     ->numeric()
                                     ->prefix('SAR')
+                                    ->disabled(fn (?Order $record): bool => $record?->status === 'completed' && $record?->payment_status === 'paid')
                                     ->required(),
                             ]),
                     ])
