@@ -104,7 +104,7 @@ class KioskInstantPrintingTest extends TestCase
         $response = $this->get(route('kiosk.screen', $kiosk->machine_code));
         $response->assertOk();
         $response->assertSee($kiosk->machine_code);
-        $response->assertSee('الطباعة الذاتية الفورية');
+        $response->assertSee('خدمة الطباعة الذاتية');
 
         // Screen Poll Status
         $pollResponse = $this->get(route('api.kiosk.screen.status', $kiosk->machine_code));

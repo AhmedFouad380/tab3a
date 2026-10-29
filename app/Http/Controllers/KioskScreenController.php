@@ -35,16 +35,19 @@ class KioskScreenController extends Controller
             ->margin(1)
             ->generate($kiosk->machine_code);
 
-        $appName = SystemSetting::getSetting('app_name', 'ar', 'منصة طباعة');
+        $appName = SystemSetting::getSetting('app_name', 'ar', 'الطباعة الذاتية');
         $supportPhone = SystemSetting::getSetting('support_phone', 'ar');
         if (empty($supportPhone) && ! empty($kiosk->branch?->phone)) {
             $supportPhone = $kiosk->branch->phone;
         }
         if (empty($supportPhone)) {
-            $supportPhone = '+966501111110';
+            $supportPhone = '+96650000000';
         }
 
-        return view('kiosk.screen', compact('kiosk', 'session', 'qrSvg', 'connectUrl', 'appName', 'supportPhone'));
+        $appDownloadUrl = SystemSetting::getSetting('app_download_url', 'ar') ?: request()->getSchemeAndHttpHost();
+        $appQrSvg = (string) QrCode::size(46)->errorCorrection('M')->margin(0)->generate($appDownloadUrl);
+
+        return view('kiosk.screen', compact('kiosk', 'session', 'qrSvg', 'connectUrl', 'appName', 'supportPhone', 'appQrSvg'));
     }
 
     /**

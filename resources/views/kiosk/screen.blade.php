@@ -15,13 +15,14 @@
             --primary-hover: #004b99;
             --primary-light: #e0f2fe;
             --accent-blue: #0284c7;
-            --bg-canvas: #edf3f9;
+            --bg-canvas: #edf1f6; /* لون سكني مريح وأنيق */
             --card-white: #ffffff;
             --text-dark: #0f172a;
             --text-blue: #004085;
             --text-body: #334155;
             --text-muted: #64748b;
             --border-light: #e2e8f0;
+            --border-soft: #e1ebf5;
             --success-green: #10b981;
             --success-bg: #ecfdf5;
             --success-text: #047857;
@@ -52,7 +53,7 @@
             position: relative;
         }
 
-        /* Ambient Geometric Blue Ribbons in Background (Matching Screenshot) */
+        /* Ambient Fluid Shapes in Background (Matching Screenshot - لون سكني) */
         .bg-decorative-wrap {
             position: absolute;
             top: 0;
@@ -64,44 +65,26 @@
             overflow: hidden;
         }
 
-        .bg-ribbon-left {
+        .bg-shape-left {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 45vw;
-            height: 100%;
-            background: linear-gradient(135deg, rgba(186, 215, 248, 0.45) 0%, rgba(219, 234, 254, 0.15) 60%, transparent 100%);
-            clip-path: polygon(0 0, 75% 0, 25% 100%, 0 100%);
+            top: 5%;
+            left: -10vw;
+            width: 36vw;
+            height: 90%;
+            background: radial-gradient(circle, rgba(195, 215, 238, 0.5) 0%, rgba(225, 236, 248, 0.2) 60%, transparent 80%);
+            border-radius: 40% 60% 60% 40% / 40% 40% 60% 60%;
+            filter: blur(20px);
         }
 
-        .bg-ribbon-left-accent {
+        .bg-shape-right {
             position: absolute;
-            top: 0;
-            left: 6%;
-            width: 32vw;
-            height: 100%;
-            background: linear-gradient(135deg, rgba(147, 197, 253, 0.3) 0%, rgba(219, 234, 254, 0.05) 50%, transparent 100%);
-            clip-path: polygon(0 0, 85% 0, 20% 100%, 0 100%);
-        }
-
-        .bg-ribbon-right {
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 45vw;
-            height: 100%;
-            background: linear-gradient(225deg, rgba(186, 215, 248, 0.45) 0%, rgba(219, 234, 254, 0.15) 60%, transparent 100%);
-            clip-path: polygon(25% 0, 100% 0, 100% 100%, 75% 100%);
-        }
-
-        .bg-ribbon-right-accent {
-            position: absolute;
-            top: 0;
-            right: 6%;
-            width: 32vw;
-            height: 100%;
-            background: linear-gradient(225deg, rgba(147, 197, 253, 0.3) 0%, rgba(219, 234, 254, 0.05) 50%, transparent 100%);
-            clip-path: polygon(15% 0, 100% 0, 100% 100%, 80% 100%);
+            top: 5%;
+            right: -10vw;
+            width: 36vw;
+            height: 90%;
+            background: radial-gradient(circle, rgba(195, 215, 238, 0.5) 0%, rgba(225, 236, 248, 0.2) 60%, transparent 80%);
+            border-radius: 60% 40% 40% 60% / 60% 60% 40% 40%;
+            filter: blur(20px);
         }
 
         /* Subtle Stationery Book Watermark (Bottom Left) */
@@ -111,77 +94,63 @@
             left: 30px;
             width: 140px;
             height: 140px;
-            opacity: 0.18;
+            opacity: 0.12;
             pointer-events: none;
             color: #2563eb;
         }
 
-        /* ================= Header Bar ================= */
+        /* ================= Header Bar (Exact match to screenshot) ================= */
         .kiosk-header {
             position: relative;
             z-index: 10;
-            height: 64px;
-            background: #ffffff;
-            border-bottom: 1px solid var(--border-light);
+            height: 70px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 28px;
-            box-shadow: 0 2px 10px rgba(0, 50, 120, 0.04);
+            padding: 14px 44px 0;
         }
 
-        /* Header Right: Brand + Machine Badge */
+        /* Header Right: Titles & Machine Badge */
         .header-brand-wrap {
             display: flex;
             align-items: center;
             gap: 16px;
         }
 
-        .header-app-icon {
-            width: 42px;
-            height: 42px;
-            border-radius: 12px;
-            background: linear-gradient(135deg, #005bb5, #0284c7);
-            color: #ffffff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            box-shadow: 0 4px 12px rgba(0, 91, 181, 0.25);
-        }
-
         .header-titles {
             display: flex;
             flex-direction: column;
+            text-align: right;
         }
 
         .header-app-name {
-            font-size: 1.05rem;
-            font-weight: 800;
-            color: var(--primary-blue);
+            font-size: 1.25rem;
+            font-weight: 900;
+            color: #0f172a;
             line-height: 1.2;
         }
 
         .header-branch-name {
-            font-size: 0.78rem;
+            font-size: 0.85rem;
             color: var(--text-muted);
-            font-weight: 600;
+            font-weight: 700;
             display: flex;
             align-items: center;
             gap: 4px;
         }
 
         .kiosk-code-pill {
-            background: #005bb5;
-            color: #ffffff;
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #bfdbfe;
             border-radius: 999px;
-            padding: 5px 16px;
-            font-size: 0.82rem;
+            padding: 5px 18px;
+            font-size: 0.86rem;
             font-weight: 800;
-            box-shadow: 0 2px 8px rgba(0, 91, 181, 0.3);
+            box-shadow: 0 2px 6px rgba(30, 64, 175, 0.08);
         }
 
-        /* Header Left: Status, Paper, Ink & Clock */
+        /* Header Left: Status Badge & Digital Clock */
         .header-stats-wrap {
             display: flex;
             align-items: center;
@@ -191,10 +160,10 @@
         .status-badge {
             display: flex;
             align-items: center;
-            gap: 6px;
-            padding: 6px 14px;
-            border-radius: 8px;
-            font-size: 0.8rem;
+            gap: 8px;
+            padding: 6px 16px;
+            border-radius: 999px;
+            font-size: 0.84rem;
             font-weight: 700;
         }
 
@@ -202,6 +171,7 @@
             background: #ecfdf5;
             color: #047857;
             border: 1px solid #a7f3d0;
+            box-shadow: 0 2px 6px rgba(16, 185, 129, 0.08);
         }
 
         .status-dot {
@@ -218,37 +188,22 @@
             50% { opacity: 0.5; transform: scale(0.85); }
         }
 
-        .stat-badge-blue {
-            background: #f0f7ff;
-            color: #0284c7;
-            border: 1px solid #dbeafe;
+        .header-clock-pill {
+            background: #ffffff;
+            border: 1px solid var(--border-light);
+            border-radius: 999px;
+            padding: 6px 16px;
             display: flex;
             align-items: center;
-            gap: 6px;
-            padding: 6px 14px;
-            border-radius: 8px;
-            font-size: 0.8rem;
-            font-weight: 700;
-        }
-
-        .stat-badge-slate {
-            background: #f8fafc;
-            color: #334155;
-            border: 1px solid #e2e8f0;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 14px;
-            border-radius: 8px;
-            font-size: 0.8rem;
-            font-weight: 700;
+            gap: 8px;
+            color: #64748b;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
         }
 
         .header-clock {
-            font-size: 1.05rem;
+            font-size: 1rem;
             font-weight: 800;
-            color: #004085;
-            padding-right: 6px;
+            color: #0f172a;
         }
 
         /* ================= Main Stage & Card ================= */
@@ -259,73 +214,31 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 18px 24px;
+            padding: 16px 44px;
         }
 
-        /* The Hero Floating White Card (Exact replica of the screenshot) */
+        /* The Clean Hero Floating White Card (Exact replica of screenshot) */
         .card-stage {
-            width: 92%;
+            width: 100%;
             max-width: 1040px;
-            background: var(--card-white);
-            border-radius: 28px;
+            background: #ffffff;
+            border-radius: 30px;
             border: 1px solid rgba(226, 232, 240, 0.9);
-            box-shadow: 0 16px 45px rgba(2, 60, 130, 0.12);
+            box-shadow: 0 16px 45px rgba(15, 23, 42, 0.06);
             position: relative;
-            overflow: hidden;
-            padding: 38px 46px;
+            padding: 40px 48px;
         }
 
-        /* Geometric corner accents on the main card */
-        .card-corner-topleft {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 44px;
-            height: 44px;
-            background: linear-gradient(135deg, #005bb5 50%, transparent 50%);
-            border-top-left-radius: 26px;
-        }
-
-        .card-corner-bottomright {
-            position: absolute;
-            bottom: 0;
-            right: 0;
-            width: 44px;
-            height: 44px;
-            background: linear-gradient(315deg, #005bb5 50%, transparent 50%);
-            border-bottom-right-radius: 26px;
-        }
-
-        .card-corner-bottomleft {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(45deg, #0284c7 50%, transparent 50%);
-            border-bottom-left-radius: 26px;
-        }
-
-        .card-corner-topright {
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(225deg, #005bb5 50%, transparent 50%);
-            border-top-right-radius: 26px;
-        }
-
-        /* ================= Stage 1: Waiting Scan View (Screenshot Layout) ================= */
+        /* ================= Stage 1: Waiting Scan View (2-Column Screenshot Layout) ================= */
         .stage-waiting-grid {
             display: grid;
-            grid-template-columns: 1.35fr auto 1fr;
+            grid-template-columns: 1.35fr 1fr;
             align-items: center;
-            gap: 28px;
+            gap: 48px;
             width: 100%;
         }
 
-        /* Column 1: Info & Features (Right side in RTL) */
+        /* Column 1: Main Title & 4 Steps (Right side in RTL) */
         .waiting-text-col {
             display: flex;
             flex-direction: column;
@@ -333,188 +246,137 @@
         }
 
         .waiting-title {
-            font-size: 1.85rem;
+            font-size: 2.15rem;
             font-weight: 900;
-            color: var(--primary-blue);
+            color: #0f172a;
             line-height: 1.25;
-            margin-bottom: 8px;
+            margin-bottom: 22px;
             letter-spacing: -0.5px;
         }
 
-        .waiting-subtitle {
-            font-size: 0.95rem;
-            color: var(--text-body);
-            line-height: 1.6;
-            margin-bottom: 22px;
-            font-weight: 600;
-        }
-
-        .features-list {
+        .steps-list {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 13px;
         }
 
-        .feature-item {
+        .step-card {
             display: flex;
             align-items: center;
-            gap: 12px;
-            font-size: 0.94rem;
+            gap: 14px;
+            background: #f1f7fd;
+            border: 1px solid #e1ebf5;
+            border-radius: 16px;
+            padding: 13px 18px;
+            transition: all 0.2s ease;
+        }
+
+        .step-card:hover {
+            background: #eaf3fb;
+            border-color: #cbdff2;
+        }
+
+        .step-badge {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #dbeafe;
+            color: #0284c7;
+            font-weight: 800;
+            font-size: 0.96rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .step-icon {
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #0284c7;
+            font-size: 1.15rem;
+            flex-shrink: 0;
+        }
+
+        .step-text {
+            font-size: 0.98rem;
             font-weight: 700;
             color: #1e293b;
+            line-height: 1.45;
         }
 
-        .feature-icon-box {
-            width: 34px;
-            height: 34px;
-            border-radius: 9px;
-            background: #e0f2fe;
-            color: #0284c7;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 15px;
-            flex-shrink: 0;
-            border: 1px solid #bae6fd;
-        }
-
-        /* Column 2: Logo & Machine Code Badge (Center) */
-        .waiting-middle-col {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 18px;
-            padding: 0 10px;
-        }
-
-        /* Partner Brand Logo (قرطاسية منصور - Mansour Stationery / Platform Logo) */
-        .partner-logo-box {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            direction: ltr;
-        }
-
-        .partner-icon-diamond {
-            width: 44px;
-            height: 44px;
-            background: #ffffff;
-            border: 2.5px solid #005bb5;
-            border-radius: 10px;
-            transform: rotate(45deg);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 10px rgba(0, 91, 181, 0.15);
-            flex-shrink: 0;
-        }
-
-        .partner-icon-inner {
-            transform: rotate(-45deg);
-            color: #005bb5;
-            font-size: 19px;
-        }
-
-        .partner-text-en {
-            text-align: right;
-            font-family: 'Cairo', sans-serif;
-            color: #005bb5;
-        }
-
-        .partner-text-en .brand-ar {
-            font-size: 1.15rem;
-            font-weight: 900;
-            line-height: 1.1;
-        }
-
-        .partner-text-en .brand-en {
-            font-size: 0.72rem;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            opacity: 0.9;
-        }
-
-        .partner-text-ar {
-            text-align: left;
-            font-family: 'Cairo', sans-serif;
-            color: #005bb5;
-        }
-
-        .partner-text-ar .brand-ar {
-            font-size: 1.15rem;
-            font-weight: 900;
-            line-height: 1.1;
-        }
-
-        .partner-text-ar .brand-en {
-            font-size: 0.72rem;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            opacity: 0.9;
-        }
-
-        /* Machine Code Sub-Card */
-        .machine-code-wrap {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .machine-code-label {
-            font-size: 0.88rem;
-            font-weight: 800;
-            color: var(--primary-blue);
-            line-height: 1.2;
-            text-align: center;
-        }
-
-        .machine-code-box {
-            background: #e0f2fe;
-            border: 1px solid #bae6fd;
-            border-radius: 12px;
-            padding: 8px 16px;
-            text-align: center;
-            color: #005bb5;
-            font-weight: 800;
-            font-size: 1.15rem;
-            line-height: 1.15;
-            box-shadow: inset 0 2px 4px rgba(0, 91, 181, 0.05);
-        }
-
-        /* Column 3: Big QR Code (Left side in RTL) */
+        /* Column 2: Big QR Code Frame with Scanner Brackets (Left side in RTL) */
         .waiting-qr-col {
             display: flex;
             justify-content: center;
             align-items: center;
         }
 
-        .qr-frame-outer {
-            width: 250px;
-            height: 250px;
+        .qr-scanner-frame {
+            position: relative;
+            width: 270px;
+            height: 270px;
             background: #ffffff;
-            border-radius: 22px;
-            border: 2px solid #005bb5;
-            box-shadow: 0 10px 30px rgba(0, 91, 181, 0.12);
-            padding: 14px;
+            border-radius: 24px;
+            box-shadow: 0 10px 32px rgba(0, 91, 181, 0.08);
+            padding: 18px;
             display: flex;
             align-items: center;
             justify-content: center;
-            position: relative;
         }
 
-        .qr-frame-outer svg {
+        .qr-scanner-frame svg {
             width: 100% !important;
             height: 100% !important;
             display: block;
         }
 
+        /* 4 Blue Corner Scanner Brackets */
+        .corner {
+            position: absolute;
+            width: 36px;
+            height: 36px;
+            border-color: #38bdf8;
+            border-style: solid;
+            pointer-events: none;
+        }
+
+        .corner-tl {
+            top: -3px;
+            left: -3px;
+            border-width: 4px 0 0 4px;
+            border-top-left-radius: 16px;
+        }
+
+        .corner-tr {
+            top: -3px;
+            right: -3px;
+            border-width: 4px 4px 0 0;
+            border-top-right-radius: 16px;
+        }
+
+        .corner-bl {
+            bottom: -3px;
+            left: -3px;
+            border-width: 0 0 4px 4px;
+            border-bottom-left-radius: 16px;
+        }
+
+        .corner-br {
+            bottom: -3px;
+            right: -3px;
+            border-width: 0 4px 4px 0;
+            border-bottom-right-radius: 16px;
+        }
+
         /* Subtle animated scan beam across QR */
         .qr-scan-line {
             position: absolute;
-            left: 8px;
-            right: 8px;
+            left: 12px;
+            right: 12px;
             height: 2px;
             background: linear-gradient(90deg, transparent, #0284c7, #38bdf8, transparent);
             box-shadow: 0 0 10px #0284c7;
@@ -525,9 +387,9 @@
         }
 
         @keyframes scan-move {
-            0% { top: 12px; }
-            50% { top: 230px; }
-            100% { top: 12px; }
+            0% { top: 16px; }
+            50% { top: 250px; }
+            100% { top: 16px; }
         }
 
         /* ================= Active Customer Stages (Connected, Uploaded, Printing, etc.) ================= */
@@ -641,39 +503,86 @@
             box-shadow: 0 6px 20px rgba(0, 91, 181, 0.4);
         }
 
-        /* ================= Footer Bar ================= */
+        /* ================= Footer Dock Bar (Exact Screenshot Match) ================= */
         .kiosk-footer {
             position: relative;
             z-index: 10;
-            height: 48px;
-            background: var(--primary-blue);
-            color: #ffffff;
+            width: 100%;
+            max-width: 1040px;
+            margin: 0 auto 18px;
+            background: #ffffff;
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            border-radius: 22px;
+            padding: 14px 34px;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .footer-help {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .footer-help-icon {
+            font-size: 28px;
+            color: #005bb5;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 0 32px;
-            font-size: 0.92rem;
-            font-weight: 600;
-            box-shadow: 0 -2px 10px rgba(0, 50, 120, 0.1);
         }
 
-        .kiosk-footer a {
-            color: #ffffff;
-            text-decoration: none;
+        .footer-help-text {
+            display: flex;
+            flex-direction: column;
+            text-align: right;
         }
 
-        .footer-support {
+        .footer-help-title {
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: #0f172a;
+            line-height: 1.25;
+        }
+
+        .footer-help-phone {
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: var(--text-muted);
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
         }
 
-        .footer-note {
+        .footer-download {
             display: flex;
             align-items: center;
-            gap: 8px;
-            opacity: 0.95;
-            font-size: 0.84rem;
+            gap: 14px;
+        }
+
+        .footer-download-title {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: #0f172a;
+        }
+
+        .footer-download-qr {
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            background: #f8fafc;
+            border: 1px solid var(--border-light);
+            padding: 3px;
+        }
+
+        .footer-download-qr svg {
+            width: 100% !important;
+            height: 100% !important;
         }
 
         /* ================= Inactivity Modal ================= */
@@ -737,12 +646,6 @@
                 grid-template-columns: 1fr;
                 text-align: center;
             }
-            .features-list {
-                align-items: center;
-            }
-            .waiting-middle-col {
-                order: 3;
-            }
             .waiting-qr-col {
                 order: 2;
             }
@@ -751,12 +654,10 @@
 </head>
 <body>
 
-    <!-- Ambient Geometric Ribbon Overlays & Watermark (Matching Screenshot) -->
+    <!-- Ambient Fluid Shapes in Background (Matching Screenshot - لون سكني) -->
     <div class="bg-decorative-wrap">
-        <div class="bg-ribbon-left"></div>
-        <div class="bg-ribbon-left-accent"></div>
-        <div class="bg-ribbon-right"></div>
-        <div class="bg-ribbon-right-accent"></div>
+        <div class="bg-shape-left"></div>
+        <div class="bg-shape-right"></div>
         
         <!-- Open Book Watermark Outline in Bottom Left -->
         <svg class="watermark-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
@@ -769,16 +670,13 @@
 
     <!-- Header Bar (Exact match to screenshot top-bar) -->
     <header class="kiosk-header">
-        <!-- Right side in RTL: App Brand, Branch and Machine Badge -->
+        <!-- Right side in RTL: Machine Badge & Titles -->
         <div class="header-brand-wrap">
-            <div class="header-app-icon">
-                <i class="fa-solid fa-print"></i>
-            </div>
             <div class="header-titles">
-                <div class="header-app-name">{{ $appName ?? 'تطبيق طباعة' }}</div>
+                <div class="header-app-name">{{ $appName ?? 'الطباعة الذاتية' }}</div>
                 <div class="header-branch-name">
+                    <span>{{ $kiosk->branch?->name['ar'] ?? 'الفرع الرئيسي-حي الضاحي' }}</span>
                     <span>📍</span>
-                    <span>{{ $kiosk->branch?->name['ar'] ?? 'فرع الرياض - حي العليا' }}</span>
                 </div>
             </div>
             <div class="kiosk-code-pill num-font">{{ $kiosk->machine_code }}</div>
@@ -786,90 +684,83 @@
 
         <!-- Left side in RTL: Status Badge & Digital Clock -->
         <div class="header-stats-wrap">
+            <div class="header-clock-pill">
+                <i class="fa-regular fa-clock"></i>
+                <span class="header-clock num-font" id="digital-clock">--:--</span>
+            </div>
+
             <div class="status-badge online">
                 <div class="status-dot"></div>
                 <span id="machine-status-text">متصلة وجاهزة</span>
             </div>
-
-            <div class="header-clock num-font" id="digital-clock">--:--</div>
         </div>
     </header>
 
     <!-- Main Stage -->
     <main class="main-stage">
         <div class="card-stage" id="screen-content">
-            <!-- Decorative corner polygons on the card (as in screenshot) -->
-            <div class="card-corner-topleft"></div>
-            <div class="card-corner-bottomright"></div>
-            <div class="card-corner-bottomleft"></div>
-            <div class="card-corner-topright"></div>
 
             <!-- ================= Stage 1: Waiting Scan View (Screenshot Matching) ================= -->
             <div class="stage-waiting-grid" id="view-waiting">
                 
-                <!-- Column 1: Main Title, Subtitle, and Feature Badges (Right in RTL) -->
+                <!-- Column 1: Main Title and 4 Steps (Right in RTL) -->
                 <div class="waiting-text-col">
-                    <h1 class="waiting-title">الطباعة الذاتية الفورية</h1>
-                    <p class="waiting-subtitle">
-                        امسح رمز الاستجابة السريعة (QR) بكاميرا هاتفك لبدء ربط جهازك فوراً وتجهيز مستندك للطباعة.
-                    </p>
+                    <h1 class="waiting-title">خدمة الطباعة الذاتية</h1>
 
-                    <div class="features-list">
-                        <div class="feature-item">
-                            <div class="feature-icon-box">
-                                <i class="fa-solid fa-file-arrow-up"></i>
+                    <div class="steps-list">
+                        <!-- Step 1 -->
+                        <div class="step-card">
+                            <div class="step-badge num-font">1</div>
+                            <div class="step-icon">
+                                <i class="fa-solid fa-cloud-arrow-up"></i>
                             </div>
-                            <span>ارفع ملفك مباشرة من جوالك (PDF) / صور.</span>
+                            <div class="step-text">
+                                ارفع ملفك عبر تطبيق "قرطاسية منصور"من خلال الخدمة الذاتية.
+                            </div>
                         </div>
 
-                        <div class="feature-item">
-                            <div class="feature-icon-box">
-                                <i class="fa-solid fa-bolt"></i>
+                        <!-- Step 2 -->
+                        <div class="step-card">
+                            <div class="step-badge num-font">2</div>
+                            <div class="step-icon">
+                                <i class="fa-solid fa-qrcode"></i>
                             </div>
-                            <span>تحكم بخيارات الألوان والوجهين بلمسة واحدة.</span>
+                            <div class="step-text">
+                                امسح رمز QR لربط طلبك بالجهاز
+                            </div>
                         </div>
 
-                        <div class="feature-item">
-                            <div class="feature-icon-box">
-                                <i class="fa-solid fa-credit-card"></i>
+                        <!-- Step 3 -->
+                        <div class="step-card">
+                            <div class="step-badge num-font">3</div>
+                            <div class="step-icon">
+                                <i class="fa-solid fa-sliders"></i>
                             </div>
-                            <span>ادفع إلكترونياً واستلم أوراقك في ثوانٍ.</span>
+                            <div class="step-text">
+                                حدد خيارات الطباعة وعدد النسخ
+                            </div>
+                        </div>
+
+                        <!-- Step 4 -->
+                        <div class="step-card">
+                            <div class="step-badge num-font">4</div>
+                            <div class="step-icon">
+                                <i class="fa-regular fa-credit-card"></i>
+                            </div>
+                            <div class="step-text">
+                                اكمل الدفع واستلم مطبوعتك
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Column 2: Partner Brand Logo & Machine Code (Center) -->
-                <div class="waiting-middle-col">
-                    <div class="partner-logo-box">
-                        <div class="partner-text-en">
-                            <div class="brand-ar">منصور</div>
-                            <div class="brand-en">Mansour</div>
-                        </div>
-                        <div class="partner-icon-diamond">
-                            <div class="partner-icon-inner">
-                                <i class="fa-solid fa-book-open"></i>
-                            </div>
-                        </div>
-                        <div class="partner-text-ar">
-                            <div class="brand-ar">قرطاسية</div>
-                            <div class="brand-en">stationery</div>
-                        </div>
-                    </div>
-
-                    <div class="machine-code-wrap">
-                        <div class="machine-code-box num-font">
-                            <div>{{ substr($kiosk->machine_code, 0, strrpos($kiosk->machine_code, '-') !== false ? strrpos($kiosk->machine_code, '-') + 1 : 4) }}</div>
-                            <div>{{ substr($kiosk->machine_code, strrpos($kiosk->machine_code, '-') !== false ? strrpos($kiosk->machine_code, '-') + 1 : 4) }}</div>
-                        </div>
-                        <div class="machine-code-label">
-                            كود<br>الطابعة:
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Column 3: The Big QR Code Frame (Left in RTL) -->
+                <!-- Column 2: The Big QR Code Frame with Scanner Brackets (Left in RTL) -->
                 <div class="waiting-qr-col">
-                    <div class="qr-frame-outer">
+                    <div class="qr-scanner-frame">
+                        <div class="corner corner-tl"></div>
+                        <div class="corner corner-tr"></div>
+                        <div class="corner corner-bl"></div>
+                        <div class="corner corner-br"></div>
                         <div class="qr-scan-line"></div>
                         <div id="qr-container" style="width: 100%; height: 100%;">
                             {!! $qrSvg !!}
@@ -987,19 +878,45 @@
         </div>
     </main>
 
-    <!-- Footer Bar -->
+    <!-- Footer Dock Bar (Matching Screenshot) -->
     <footer class="kiosk-footer">
         @php
             $displayPhone = !empty(trim($supportPhone ?? '')) 
                 ? $supportPhone 
                 : (!empty(trim($kiosk->branch?->phone ?? '')) 
                     ? $kiosk->branch->phone 
-                    : '+966501111110');
+                    : '+96650000000');
         @endphp
-        <div class="footer-support">
-            <i class="fa-solid fa-phone"></i>
-            <span>في حال وجود أي استفسار أو مشكلة، تواصل معنا:</span>
-            <span class="num-font" dir="ltr" style="letter-spacing: 0.5px; font-weight: 700; color: #ffffff;">{{ $displayPhone }}</span>
+
+        <!-- Left Side (RTL): App Download -->
+        <div class="footer-download">
+            <div class="footer-download-qr">
+                @if(!empty($appQrSvg))
+                    {!! $appQrSvg !!}
+                @else
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#005bb5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="14" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                    </svg>
+                @endif
+            </div>
+            <div class="footer-download-title">لتحميل التطبيق</div>
+        </div>
+
+        <!-- Right Side (RTL): Customer Support -->
+        <div class="footer-help">
+            <div class="footer-help-text">
+                <div class="footer-help-title">تحتاج مساعدة؟</div>
+                <div class="footer-help-phone">
+                    <span>التواصل مع خدمة العملاء:</span>
+                    <span class="num-font" dir="ltr">{{ $displayPhone }}</span>
+                </div>
+            </div>
+            <div class="footer-help-icon">
+                <i class="fa-solid fa-headset"></i>
+            </div>
         </div>
     </footer>
 
