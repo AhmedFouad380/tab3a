@@ -46,5 +46,7 @@ class EditBranch extends EditRecord
     protected function afterSave(): void
     {
         $this->record->syncWorkingHours($this->schedules);
+
+        $this->data['working_hours_schedules'] = $this->record->fresh()->getWorkingHoursSchedules();
     }
 }

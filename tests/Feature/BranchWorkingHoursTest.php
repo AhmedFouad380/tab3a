@@ -179,4 +179,49 @@ class BranchWorkingHoursTest extends TestCase
                 ],
             ]);
     }
+
+    public function test_supports_multiple_shifts_per_day_and_returns_all_seven_days_in_api(): void
+    {
+        $branch = $this->createBranch();
+
+        // Configure morning shift and evening shift on Sunday
+        $branch->syncWorkingHours([
+            [
+                'days' => ['sunday', 'monday'],
+                'opening_time' => '08:00',
+                'closing_time' => '12:00',
+                'is_day_off' => false,
+            ],
+            [
+                'days' => ['sunday', 'friday'],
+                'opening_time' => '16:00',
+                'closing_time' => '23:30',
+                'is_day_off' => false,
+            ],
+        ]);
+
+        // Sunday should have 2 distinct shifts
+        $sundayHours = $branch->workingHours()->where('day_of_week', 'sunday')->get();
+        $this->assertCount(2, $sundayHours);
+
+        $response = $this->getJson("/api/v1/branches/{$branch->id}");
+        $response->assertStatus(200);
+
+        $workingHours = $response->json('data.working_hours');
+
+        // All 7 days must be represented in API response
+        $returnedDays = array_unique(array_column($workingHours, 'day_of_week'));
+        $this->assertCount(7, $returnedDays);
+
+        // Sunday must have 2 shift entries
+        $sundayApiEntries = array_values(array_filter($workingHours, fn ($h) => $h['day_of_week'] === 'sunday'));
+        $this->assertCount(2, $sundayApiEntries);
+        $this->assertEquals('08:00', $sundayApiEntries[0]['opening_time']);
+        $this->assertEquals('16:00', $sundayApiEntries[1]['opening_time']);
+
+        // Days not configured (e.g. tuesday) must be returned with is_day_off = true
+        $tuesdayApiEntries = array_values(array_filter($workingHours, fn ($h) => $h['day_of_week'] === 'tuesday'));
+        $this->assertCount(1, $tuesdayApiEntries);
+        $this->assertTrue($tuesdayApiEntries[0]['is_day_off']);
+    }
 }

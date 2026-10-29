@@ -58,11 +58,14 @@ class Branch extends Model
 
     /**
      * Synchronize working hour schedules from the form repeater.
+     * Supports multiple shifts per day (e.g., morning and evening shifts).
      */
     public function syncWorkingHours(array $schedules): void
     {
         $allDays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-        $processedDays = [];
+
+        // Clean up previous records for this branch
+        $this->workingHours()->delete();
 
         foreach ($schedules as $schedule) {
             $days = (array) ($schedule['days'] ?? []);
@@ -75,34 +78,22 @@ class Branch extends Model
                 : '00:00:00';
 
             foreach ($days as $day) {
-                if (! in_array($day, $allDays) || in_array($day, $processedDays)) {
+                if (! in_array($day, $allDays)) {
                     continue;
                 }
 
-                BranchWorkingHour::updateOrCreate(
-                    [
-                        'branch_id' => $this->id,
-                        'day_of_week' => $day,
-                    ],
-                    [
-                        'opening_time' => $opening,
-                        'closing_time' => $closing,
-                        'is_day_off' => $isDayOff,
-                    ]
-                );
-
-                $processedDays[] = $day;
+                $this->workingHours()->create([
+                    'day_of_week' => $day,
+                    'opening_time' => $opening,
+                    'closing_time' => $closing,
+                    'is_day_off' => $isDayOff,
+                ]);
             }
         }
-
-        // Delete any days that are no longer part of any schedule
-        BranchWorkingHour::where('branch_id', $this->id)
-            ->whereNotIn('day_of_week', $processedDays)
-            ->delete();
     }
 
     /**
-     * Group existing working hours into schedules for editing in Filament.
+     * Group existing working hours into schedules for editing in Filament and API.
      */
     public function getWorkingHoursSchedules(): array
     {
@@ -116,7 +107,12 @@ class Branch extends Model
             'saturday' => 7,
         ];
 
-        $hours = $this->workingHours()->get()->sortBy(fn ($wh) => $dayOrder[$wh->day_of_week] ?? 99);
+        $hours = $this->workingHours()
+            ->get()
+            ->sortBy(fn ($wh) => [
+                $wh->opening_time,
+                $dayOrder[$wh->day_of_week] ?? 99,
+            ]);
 
         if ($hours->isEmpty()) {
             return [];
@@ -185,7 +181,7 @@ class Branch extends Model
     }
 
     /**
-     * Check if branch is currently open.
+     * Check if branch is currently open across any configured shifts today.
      */
     public function isOpenNow(): bool
     {
@@ -193,12 +189,18 @@ class Branch extends Model
         $today = strtolower($now->format('l'));
         $currentTime = $now->format('H:i:s');
 
-        $todayHour = $this->workingHours()->where('day_of_week', $today)->first();
+        $todayHours = $this->workingHours()->where('day_of_week', $today)->get();
 
-        if (! $todayHour || $todayHour->is_day_off) {
+        if ($todayHours->isEmpty()) {
             return false;
         }
 
-        return $currentTime >= $todayHour->opening_time && $currentTime <= $todayHour->closing_time;
+        foreach ($todayHours as $hour) {
+            if (! $hour->is_day_off && $currentTime >= $hour->opening_time && $currentTime <= $hour->closing_time) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
