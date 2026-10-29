@@ -650,9 +650,9 @@
             color: #ffffff;
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: center;
             padding: 0 32px;
-            font-size: 0.88rem;
+            font-size: 0.92rem;
             font-weight: 600;
             box-shadow: 0 -2px 10px rgba(0, 50, 120, 0.1);
         }
@@ -987,19 +987,19 @@
         </div>
     </main>
 
-    <!-- Footer Bar (Exact match to screenshot bottom bar) -->
+    <!-- Footer Bar -->
     <footer class="kiosk-footer">
-        <!-- Right side in RTL: Support Phone -->
+        @php
+            $displayPhone = !empty(trim($supportPhone ?? '')) 
+                ? $supportPhone 
+                : (!empty(trim($kiosk->branch?->phone ?? '')) 
+                    ? $kiosk->branch->phone 
+                    : '+966501111110');
+        @endphp
         <div class="footer-support">
             <i class="fa-solid fa-phone"></i>
             <span>في حال وجود أي استفسار أو مشكلة، تواصل معنا:</span>
-            <span class="num-font" style="letter-spacing: 0.5px;">{{ $supportPhone ?? '+966500000000' }}</span>
-        </div>
-
-        <!-- Left side in RTL: Operational note -->
-        <div class="footer-note">
-            <i class="fa-solid fa-bolt"></i>
-            <span>محتوى يتطلب اتصال بالإنترنت للحصول على نتائج دقيقة</span>
+            <span class="num-font" dir="ltr" style="letter-spacing: 0.5px; font-weight: 700; color: #ffffff;">{{ $displayPhone }}</span>
         </div>
     </footer>
 
