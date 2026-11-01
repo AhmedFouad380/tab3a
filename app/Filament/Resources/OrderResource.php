@@ -340,6 +340,13 @@ class OrderResource extends Resource
                             ->success()
                             ->send();
                     }),
+                Tables\Actions\Action::make('invoice')
+                    ->label('الفاتورة')
+                    ->icon('heroicon-o-document-text')
+                    ->color('primary')
+                    ->tooltip('عرض وطباعة الفاتورة الإلكترونية')
+                    ->url(fn (Order $record): string => route('admin.orders.invoice', $record))
+                    ->openUrlInNewTab(),
                 Tables\Actions\EditAction::make(),
             ]);
     }

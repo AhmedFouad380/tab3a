@@ -26,6 +26,12 @@ class EditOrder extends EditRecord
                 ->url(fn () => $this->record->items()->first() ? route('admin.orders.items.preview', $this->record->items()->first()) : null)
                 ->openUrlInNewTab()
                 ->visible(fn () => $this->record->items()->exists()),
+            Actions\Action::make('invoice')
+                ->label('الفاتورة الإلكترونية')
+                ->icon('heroicon-o-printer')
+                ->color('primary')
+                ->url(fn () => route('admin.orders.invoice', $this->record))
+                ->openUrlInNewTab(),
             Actions\DeleteAction::make(),
         ];
     }

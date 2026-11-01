@@ -14,7 +14,7 @@
             --primary-blue: #005bb5;
             --primary-hover: #004b99;
             --primary-light: #e0f2fe;
-            --accent-blue: #0284c7;
+            --accent-blue: #005bb5;
             --bg-canvas: #edf1f6; /* لون سكني مريح وأنيق */
             --card-white: #ffffff;
             --text-dark: #0f172a;
@@ -281,7 +281,7 @@
             height: 32px;
             border-radius: 50%;
             background: #dbeafe;
-            color: #0284c7;
+            color: #005bb5;
             font-weight: 800;
             font-size: 0.96rem;
             display: flex;
@@ -296,7 +296,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #0284c7;
+            color: #005bb5;
             font-size: 1.15rem;
             flex-shrink: 0;
         }
@@ -339,7 +339,7 @@
             position: absolute;
             width: 36px;
             height: 36px;
-            border-color: #38bdf8;
+            border-color: #005bb5;
             border-style: solid;
             pointer-events: none;
         }
@@ -673,7 +673,7 @@
         <!-- Right side in RTL: Machine Badge & Titles -->
         <div class="header-brand-wrap">
             <div class="header-titles">
-                <div class="header-app-name">{{ $appName ?? 'الطباعة الذاتية' }}</div>
+                <div class="header-app-name">الطباعة الذاتية</div>
                 <div class="header-branch-name">
                     <span>{{ $kiosk->branch?->name['ar'] ?? 'الفرع الرئيسي-حي الضاحي' }}</span>
                     <span>📍</span>
@@ -682,16 +682,16 @@
             <div class="kiosk-code-pill num-font">{{ $kiosk->machine_code }}</div>
         </div>
 
-        <!-- Left side in RTL: Status Badge & Digital Clock -->
+        <!-- Left side in RTL: Status Badge & Digital Clock (Clock on far left, status next to it) -->
         <div class="header-stats-wrap">
-            <div class="header-clock-pill">
-                <i class="fa-regular fa-clock"></i>
-                <span class="header-clock num-font" id="digital-clock">--:--</span>
-            </div>
-
             <div class="status-badge online">
                 <div class="status-dot"></div>
                 <span id="machine-status-text">متصلة وجاهزة</span>
+            </div>
+
+            <div class="header-clock-pill">
+                <i class="fa-regular fa-clock"></i>
+                <span class="header-clock num-font" id="digital-clock">--:--</span>
             </div>
         </div>
     </header>
@@ -712,10 +712,10 @@
                         <div class="step-card">
                             <div class="step-badge num-font">1</div>
                             <div class="step-icon">
-                                <i class="fa-solid fa-cloud-arrow-up"></i>
+                                <i class="fa-solid fa-qrcode"></i>
                             </div>
                             <div class="step-text">
-                                ارفع ملفك عبر تطبيق "قرطاسية منصور"من خلال الخدمة الذاتية.
+                                امسح رمز QR لربط طلبك بالجهاز
                             </div>
                         </div>
 
@@ -723,10 +723,10 @@
                         <div class="step-card">
                             <div class="step-badge num-font">2</div>
                             <div class="step-icon">
-                                <i class="fa-solid fa-qrcode"></i>
+                                <i class="fa-solid fa-cloud-arrow-up"></i>
                             </div>
                             <div class="step-text">
-                                امسح رمز QR لربط طلبك بالجهاز
+                                ارفع ملفك عبر تطبيق "قرطاسية منصور" من خلال الخدمة الذاتية.
                             </div>
                         </div>
 
