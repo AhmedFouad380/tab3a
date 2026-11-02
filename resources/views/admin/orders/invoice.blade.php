@@ -626,7 +626,6 @@
                 
                 <div class="brand-meta">
                     <div><strong>الرقم الضريبي (VAT ID):</strong> <span class="num-font">{{ $vatNumber }}</span></div>
-                    <div><strong>السجل التجاري (C.R):</strong> <span class="num-font">{{ $crNumber }}</span></div>
                     <div><strong>خدمة العملاء:</strong> <span class="num-font" dir="ltr">{{ $supportPhone }}</span></div>
                 </div>
             </div>

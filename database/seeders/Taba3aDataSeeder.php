@@ -38,6 +38,14 @@ class Taba3aDataSeeder extends Seeder
             ]
         );
         SystemSetting::updateOrCreate(
+            ['key' => 'vat_number'],
+            [
+                'group' => 'pricing',
+                'display_name' => ['ar' => 'الرقم الضريبي للمنشأة (VAT ID)', 'en' => 'Tax Identification Number (VAT ID)'],
+                'value' => ['ar' => '300987654300003', 'en' => '300987654300003'],
+            ]
+        );
+        SystemSetting::updateOrCreate(
             ['key' => 'max_file_size_mb'],
             [
                 'group' => 'print_settings',
