@@ -131,6 +131,15 @@
             gap: 4px;
         }
 
+        .brand-logo-img {
+            max-height: 52px;
+            width: auto;
+            max-width: 260px;
+            object-fit: contain;
+            display: block;
+            margin-bottom: 6px;
+        }
+
         .brand-title {
             font-size: 1.6rem;
             font-weight: 900;
@@ -603,11 +612,17 @@
         <!-- Header -->
         <header class="invoice-header">
             <div class="header-brand">
-                <div class="brand-title">
-                    <i class="fa-solid fa-print"></i>
-                    <span>{{ $companyName }}</span>
-                </div>
-                <div class="brand-subtitle num-font">{{ $companyNameEn }}</div>
+                @if(!empty($companyLogoUrl))
+                    <div class="brand-logo-wrap">
+                        <img src="{{ $companyLogoUrl }}" alt="{{ $companyName }}" class="brand-logo-img">
+                    </div>
+                @else
+                    <div class="brand-title">
+                        <i class="fa-solid fa-print"></i>
+                        <span>{{ $companyName }}</span>
+                    </div>
+                    <div class="brand-subtitle num-font">{{ $companyNameEn }}</div>
+                @endif
                 
                 <div class="brand-meta">
                     <div><strong>الرقم الضريبي (VAT ID):</strong> <span class="num-font">{{ $vatNumber }}</span></div>

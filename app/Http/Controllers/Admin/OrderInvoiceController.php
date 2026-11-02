@@ -41,10 +41,21 @@ class OrderInvoiceController extends Controller
             ->margin(0)
             ->generate($zatcaQrBase64);
 
+        $settingLogo = SystemSetting::getSetting('app_logo', 'ar', null);
+        $companyLogoUrl = null;
+        if ($settingLogo) {
+            $companyLogoUrl = str_starts_with($settingLogo, 'http')
+                ? $settingLogo
+                : (file_exists(public_path($settingLogo)) ? asset($settingLogo) : asset('storage/'.$settingLogo));
+        } elseif (file_exists(public_path('logo.jpeg'))) {
+            $companyLogoUrl = asset('logo.jpeg');
+        }
+
         return view('admin.orders.invoice', compact(
             'order',
             'companyName',
             'companyNameEn',
+            'companyLogoUrl',
             'vatNumber',
             'crNumber',
             'supportPhone',
