@@ -117,10 +117,20 @@
             gap: 16px;
         }
 
+        .header-logo-img {
+            max-height: 38px;
+            width: auto;
+            max-width: 160px;
+            object-fit: contain;
+            display: block;
+        }
+
         .header-titles {
             display: flex;
             flex-direction: column;
             text-align: right;
+            align-items: flex-start;
+            gap: 2px;
         }
 
         .header-app-name {
@@ -226,7 +236,7 @@
             border: 1px solid rgba(226, 232, 240, 0.9);
             box-shadow: 0 16px 45px rgba(15, 23, 42, 0.06);
             position: relative;
-            padding: 40px 48px;
+            padding: 34px 46px;
         }
 
         /* ================= Stage 1: Waiting Scan View (2-Column Screenshot Layout) ================= */
@@ -238,7 +248,7 @@
             width: 100%;
         }
 
-        /* Column 1: Main Title & 4 Steps (Right side in RTL) */
+        /* Column 1: Main Title & 5 Steps (Right side in RTL) */
         .waiting-text-col {
             display: flex;
             flex-direction: column;
@@ -246,18 +256,18 @@
         }
 
         .waiting-title {
-            font-size: 2.15rem;
+            font-size: 2.1rem;
             font-weight: 900;
             color: #0f172a;
             line-height: 1.25;
-            margin-bottom: 22px;
+            margin-bottom: 16px;
             letter-spacing: -0.5px;
         }
 
         .steps-list {
             display: flex;
             flex-direction: column;
-            gap: 13px;
+            gap: 10px;
         }
 
         .step-card {
@@ -266,8 +276,8 @@
             gap: 14px;
             background: #f1f7fd;
             border: 1px solid #e1ebf5;
-            border-radius: 16px;
-            padding: 13px 18px;
+            border-radius: 15px;
+            padding: 10px 16px;
             transition: all 0.2s ease;
         }
 
@@ -673,7 +683,13 @@
         <!-- Right side in RTL: Machine Badge & Titles -->
         <div class="header-brand-wrap">
             <div class="header-titles">
-                <div class="header-app-name">الطباعة الذاتية</div>
+                <div class="header-app-name">
+                    @if(!empty($appLogoUrl) || file_exists(public_path('logo.jpeg')))
+                        <img src="{{ $appLogoUrl ?? asset('logo.jpeg') }}" alt="الشعار" class="header-logo-img">
+                    @else
+                        <span>الطباعة الذاتية</span>
+                    @endif
+                </div>
                 <div class="header-branch-name">
                     <span>{{ $kiosk->branch?->name['ar'] ?? 'الفرع الرئيسي-حي الضاحي' }}</span>
                     <span>📍</span>
@@ -712,10 +728,10 @@
                         <div class="step-card">
                             <div class="step-badge num-font">1</div>
                             <div class="step-icon">
-                                <i class="fa-solid fa-qrcode"></i>
+                                <i class="fa-solid fa-mobile-screen-button"></i>
                             </div>
                             <div class="step-text">
-                                امسح رمز QR لربط طلبك بالجهاز
+                                افتح تطبيق قرطاسية منصور واختر «الطباعة الذاتية»
                             </div>
                         </div>
 
@@ -723,16 +739,27 @@
                         <div class="step-card">
                             <div class="step-badge num-font">2</div>
                             <div class="step-icon">
-                                <i class="fa-solid fa-cloud-arrow-up"></i>
+                                <i class="fa-solid fa-qrcode"></i>
                             </div>
                             <div class="step-text">
-                                ارفع ملفك عبر تطبيق "قرطاسية منصور" من خلال الخدمة الذاتية.
+                                امسح رمز QR لربط طلبك بالجهاز
                             </div>
                         </div>
 
                         <!-- Step 3 -->
                         <div class="step-card">
                             <div class="step-badge num-font">3</div>
+                            <div class="step-icon">
+                                <i class="fa-solid fa-cloud-arrow-up"></i>
+                            </div>
+                            <div class="step-text">
+                                ارفع الملف المراد طباعته
+                            </div>
+                        </div>
+
+                        <!-- Step 4 -->
+                        <div class="step-card">
+                            <div class="step-badge num-font">4</div>
                             <div class="step-icon">
                                 <i class="fa-solid fa-sliders"></i>
                             </div>
@@ -741,14 +768,14 @@
                             </div>
                         </div>
 
-                        <!-- Step 4 -->
+                        <!-- Step 5 -->
                         <div class="step-card">
-                            <div class="step-badge num-font">4</div>
+                            <div class="step-badge num-font">5</div>
                             <div class="step-icon">
                                 <i class="fa-regular fa-credit-card"></i>
                             </div>
                             <div class="step-text">
-                                اكمل الدفع واستلم مطبوعتك
+                                أكمل الدفع واستلم مطبوعاتك
                             </div>
                         </div>
                     </div>

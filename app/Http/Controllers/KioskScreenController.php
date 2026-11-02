@@ -47,7 +47,17 @@ class KioskScreenController extends Controller
         $appDownloadUrl = SystemSetting::getSetting('app_download_url', 'ar') ?: request()->getSchemeAndHttpHost();
         $appQrSvg = (string) QrCode::size(46)->errorCorrection('M')->margin(0)->generate($appDownloadUrl);
 
-        return view('kiosk.screen', compact('kiosk', 'session', 'qrSvg', 'connectUrl', 'appName', 'supportPhone', 'appQrSvg'));
+        $settingLogo = SystemSetting::getSetting('app_logo', 'ar', null);
+        $appLogoUrl = null;
+        if ($settingLogo) {
+            $appLogoUrl = str_starts_with($settingLogo, 'http')
+                ? $settingLogo
+                : (file_exists(public_path($settingLogo)) ? asset($settingLogo) : asset('storage/'.$settingLogo));
+        } elseif (file_exists(public_path('logo.jpeg'))) {
+            $appLogoUrl = asset('logo.jpeg');
+        }
+
+        return view('kiosk.screen', compact('kiosk', 'session', 'qrSvg', 'connectUrl', 'appName', 'supportPhone', 'appQrSvg', 'appLogoUrl'));
     }
 
     /**
