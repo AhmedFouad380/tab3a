@@ -24,6 +24,10 @@ class OrderResource extends JsonResource
             'total_amount' => (float) $this->total_amount,
             'scheduled_pickup_at' => $this->scheduled_pickup_at?->toIso8601String(),
             'actual_pickup_at' => $this->actual_pickup_at?->toIso8601String(),
+            'checkout_url' => $this->when(
+                $this->payment_method === 'alrajhi' && $this->payment_status === 'unpaid',
+                fn () => route('payment.alrajhi.checkout', $this->resource)
+            ),
             'created_at' => $this->created_at?->toIso8601String(),
             'branch' => new BranchResource($this->whenLoaded('branch')),
             'kiosk' => new KioskResource($this->whenLoaded('kiosk')),

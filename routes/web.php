@@ -25,6 +25,15 @@ Route::middleware(['auth:admin'])->prefix('admin/orders')->name('admin.orders.')
     Route::get('/items/{orderItem}/preview', [OrderFileController::class, 'previewItem'])->name('items.preview');
 });
 
+// Al Rajhi Bank Payment Gateway
+use App\Http\Controllers\Payment\AlRajhiPaymentController;
+
+Route::prefix('payments/alrajhi')->name('payment.alrajhi.')->group(function () {
+    Route::get('/checkout/{order}', [AlRajhiPaymentController::class, 'checkout'])->name('checkout');
+    Route::match(['get', 'post'], '/callback', [AlRajhiPaymentController::class, 'callback'])->name('callback');
+    Route::match(['get', 'post'], '/error', [AlRajhiPaymentController::class, 'error'])->name('error');
+});
+
 // Kiosk Sticker & QR Code Downloads
 use App\Http\Controllers\KioskScreenController;
 use App\Http\Controllers\KioskStickerController;

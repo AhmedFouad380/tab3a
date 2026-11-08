@@ -1103,10 +1103,12 @@
                     triggerBrowserPrint(fileUrl);
                 } else if (status === 'completed') {
                     document.getElementById('view-completed').style.display = 'flex';
+                } else if (status === 'cancelled' || status === 'expired') {
+                    document.getElementById('view-waiting').style.display = 'grid';
                 }
             }
 
-            if (status === 'waiting_scan') {
+            if (status === 'waiting_scan' || status === 'cancelled' || status === 'expired') {
                 hasTriggeredPrintForToken = null;
             }
 

@@ -133,6 +133,10 @@ class OrderController extends BaseApiController
         return DB::transaction(function () use ($request, $user, $kiosk, $session, $originalFileName, $filePath, $fileExtension, $fileSizeBytes, $detectedPageCount, $pagesToPrint, $copies, $sideMode, $paperSize, $colorMode, $totalSheets, $unitPrice, $subtotal, $taxAmount, $totalAmount) {
             $orderNumber = 'TAB-'.date('Ymd').'-'.strtoupper(bin2hex(random_bytes(3)));
 
+            $isAlrajhi = $request->payment_method === 'alrajhi';
+            $orderStatus = $isAlrajhi ? 'pending' : 'completed';
+            $paymentStatus = $isAlrajhi ? 'unpaid' : 'paid';
+
             $order = Order::create([
                 'order_number' => $orderNumber,
                 'user_id' => $user->id,
@@ -140,8 +144,8 @@ class OrderController extends BaseApiController
                 'is_teacher' => $request->boolean('is_teacher'),
                 'branch_id' => $kiosk->branch_id,
                 'kiosk_machine_id' => $kiosk->id,
-                'status' => 'completed',
-                'payment_status' => 'paid',
+                'status' => $orderStatus,
+                'payment_status' => $paymentStatus,
                 'payment_method' => $request->payment_method,
                 'subtotal' => $subtotal,
                 'tax_amount' => $taxAmount,
@@ -167,18 +171,7 @@ class OrderController extends BaseApiController
                 'total_item_price' => $subtotal,
             ]);
 
-            if ($paperSize === 'A3') {
-                $kiosk->decrement('paper_tray_a3_sheets', min($kiosk->paper_tray_a3_sheets, $totalSheets));
-            } else {
-                $kiosk->decrement('paper_tray_a4_sheets', min($kiosk->paper_tray_a4_sheets, $totalSheets));
-            }
-
-            $kiosk->update([
-                'is_paper_low' => $kiosk->paper_tray_a4_sheets < 50,
-                'is_paper_empty' => $kiosk->paper_tray_a4_sheets == 0,
-            ]);
-
-            // Sync with Kiosk Screen: Update status to 'printing'
+            // Sync with Kiosk Screen
             if (! $session) {
                 if ($request->filled('session_token')) {
                     $session = KioskSession::where('session_token', $request->session_token)->first();
@@ -192,54 +185,81 @@ class OrderController extends BaseApiController
 
             if ($session) {
                 $session->update([
-                    'status' => 'printing',
+                    'status' => $isAlrajhi ? 'awaiting_payment' : 'printing',
                     'order_id' => $order->id,
-                    'completed_at' => now(),
+                    'completed_at' => $isAlrajhi ? null : now(),
                 ]);
             }
 
-            if ($request->payment_method === 'wallet') {
-                $before = $user->wallet_balance;
-                $user->decrement('wallet_balance', $totalAmount);
-                WalletTransaction::create([
+            if (! $isAlrajhi) {
+                if ($paperSize === 'A3') {
+                    $kiosk->decrement('paper_tray_a3_sheets', min($kiosk->paper_tray_a3_sheets, $totalSheets));
+                } else {
+                    $kiosk->decrement('paper_tray_a4_sheets', min($kiosk->paper_tray_a4_sheets, $totalSheets));
+                }
+
+                $kiosk->update([
+                    'is_paper_low' => $kiosk->paper_tray_a4_sheets < 50,
+                    'is_paper_empty' => $kiosk->paper_tray_a4_sheets == 0,
+                ]);
+
+                if ($request->payment_method === 'wallet') {
+                    $before = $user->wallet_balance;
+                    $user->decrement('wallet_balance', $totalAmount);
+                    WalletTransaction::create([
+                        'user_id' => $user->id,
+                        'type' => 'payment',
+                        'amount' => $totalAmount,
+                        'balance_before' => $before,
+                        'balance_after' => $user->wallet_balance,
+                        'reference_type' => Order::class,
+                        'reference_id' => $order->id,
+                        'description' => [
+                            'ar' => "دفع طباعة ذاتية لطلب {$order->order_number}",
+                            'en' => "Self-print payment for order {$order->order_number}",
+                        ],
+                    ]);
+                }
+
+                Payment::create([
+                    'order_id' => $order->id,
                     'user_id' => $user->id,
-                    'type' => 'payment',
+                    'transaction_id' => 'TXN-'.strtoupper(uniqid()),
+                    'gateway' => $request->payment_method,
                     'amount' => $totalAmount,
-                    'balance_before' => $before,
-                    'balance_after' => $user->wallet_balance,
-                    'reference_type' => Order::class,
-                    'reference_id' => $order->id,
-                    'description' => [
-                        'ar' => "دفع طباعة ذاتية لطلب {$order->order_number}",
-                        'en' => "Self-print payment for order {$order->order_number}",
-                    ],
+                    'currency' => 'SAR',
+                    'status' => 'successful',
+                    'paid_at' => now(),
                 ]);
+
+                OrderStatusHistory::create([
+                    'order_id' => $order->id,
+                    'status' => 'completed',
+                    'comment' => [
+                        'ar' => 'تمت الطباعة بنجاح عبر الماكينة الفورية',
+                        'en' => 'Printed successfully via kiosk machine',
+                    ],
+                    'created_by_type' => 'kiosk_agent',
+                ]);
+
+                $message = $this->getLocale() === 'en'
+                    ? 'Print job executed successfully'
+                    : 'تم إرسال وطباعة الملف بنجاح';
+            } else {
+                OrderStatusHistory::create([
+                    'order_id' => $order->id,
+                    'status' => 'pending',
+                    'comment' => [
+                        'ar' => 'بانتظار إتمام السداد عبر بنك الراجحي',
+                        'en' => 'Awaiting payment completion via Al Rajhi Bank',
+                    ],
+                    'created_by_type' => 'customer',
+                ]);
+
+                $message = $this->getLocale() === 'en'
+                    ? 'Order created, proceed to Al Rajhi payment'
+                    : 'تم إنشاء الطلب، يرجى استكمال الدفع عبر بنك الراجحي';
             }
-
-            Payment::create([
-                'order_id' => $order->id,
-                'user_id' => $user->id,
-                'transaction_id' => 'TXN-'.strtoupper(uniqid()),
-                'gateway' => $request->payment_method,
-                'amount' => $totalAmount,
-                'currency' => 'SAR',
-                'status' => 'successful',
-                'paid_at' => now(),
-            ]);
-
-            OrderStatusHistory::create([
-                'order_id' => $order->id,
-                'status' => 'completed',
-                'comment' => [
-                    'ar' => 'تمت الطباعة بنجاح عبر الماكينة الفورية',
-                    'en' => 'Printed successfully via kiosk machine',
-                ],
-                'created_by_type' => 'kiosk_agent',
-            ]);
-
-            $message = $this->getLocale() === 'en'
-                ? 'Print job executed successfully'
-                : 'تم إرسال وطباعة الملف بنجاح';
 
             return $this->success(new OrderResource($order->load(['branch', 'kiosk', 'items'])), $message);
         });
@@ -301,6 +321,9 @@ class OrderController extends BaseApiController
         return DB::transaction(function () use ($request, $user, $pagesToPrint, $copies, $sideMode, $paperSize, $colorMode, $totalSheets, $unitPrice, $finishingPrice, $subtotal, $taxAmount, $totalAmount) {
             $orderNumber = 'TAB-'.date('Ymd').'-'.strtoupper(bin2hex(random_bytes(3)));
 
+            $isAlrajhi = $request->payment_method === 'alrajhi';
+            $paymentStatus = $isAlrajhi ? 'unpaid' : 'paid';
+
             $order = Order::create([
                 'order_number' => $orderNumber,
                 'user_id' => $user->id,
@@ -309,7 +332,7 @@ class OrderController extends BaseApiController
                 'branch_id' => $request->branch_id,
                 'scheduled_pickup_at' => $request->scheduled_pickup_at,
                 'status' => 'pending',
-                'payment_status' => 'paid',
+                'payment_status' => $paymentStatus,
                 'payment_method' => $request->payment_method,
                 'subtotal' => $subtotal,
                 'tax_amount' => $taxAmount,
@@ -337,48 +360,64 @@ class OrderController extends BaseApiController
                 'total_item_price' => $subtotal,
             ]);
 
-            if ($request->payment_method === 'wallet') {
-                $before = $user->wallet_balance;
-                $user->decrement('wallet_balance', $totalAmount);
-                WalletTransaction::create([
+            if (! $isAlrajhi) {
+                if ($request->payment_method === 'wallet') {
+                    $before = $user->wallet_balance;
+                    $user->decrement('wallet_balance', $totalAmount);
+                    WalletTransaction::create([
+                        'user_id' => $user->id,
+                        'type' => 'payment',
+                        'amount' => $totalAmount,
+                        'balance_before' => $before,
+                        'balance_after' => $user->wallet_balance,
+                        'reference_type' => Order::class,
+                        'reference_id' => $order->id,
+                        'description' => [
+                            'ar' => "دفع طباعة مسبقة لطلب {$order->order_number}",
+                            'en' => "Pre-order payment for order {$order->order_number}",
+                        ],
+                    ]);
+                }
+
+                Payment::create([
+                    'order_id' => $order->id,
                     'user_id' => $user->id,
-                    'type' => 'payment',
+                    'transaction_id' => 'TXN-'.strtoupper(uniqid()),
+                    'gateway' => $request->payment_method,
                     'amount' => $totalAmount,
-                    'balance_before' => $before,
-                    'balance_after' => $user->wallet_balance,
-                    'reference_type' => Order::class,
-                    'reference_id' => $order->id,
-                    'description' => [
-                        'ar' => "دفع طباعة مسبقة لطلب {$order->order_number}",
-                        'en' => "Pre-order payment for order {$order->order_number}",
-                    ],
+                    'currency' => 'SAR',
+                    'status' => 'successful',
+                    'paid_at' => now(),
                 ]);
+
+                OrderStatusHistory::create([
+                    'order_id' => $order->id,
+                    'status' => 'pending',
+                    'comment' => [
+                        'ar' => 'تم استلام الطلب وبانتظار بدء التجهيز بالفرع',
+                        'en' => 'Order received, pending branch processing',
+                    ],
+                    'created_by_type' => 'user',
+                ]);
+
+                $message = $this->getLocale() === 'en'
+                    ? 'Pre-order created successfully. You will be notified once ready for pickup.'
+                    : 'تم إنشاء الطلب بنجاح، سيتم إشعارك فور اكتمال التجهيز بالفرع.';
+            } else {
+                OrderStatusHistory::create([
+                    'order_id' => $order->id,
+                    'status' => 'pending',
+                    'comment' => [
+                        'ar' => 'تم استلام الطلب وبانتظار إتمام السداد عبر بنك الراجحي',
+                        'en' => 'Order received, awaiting payment completion via Al Rajhi Bank',
+                    ],
+                    'created_by_type' => 'user',
+                ]);
+
+                $message = $this->getLocale() === 'en'
+                    ? 'Pre-order created. Proceed to Al Rajhi payment.'
+                    : 'تم إنشاء الطلب، يرجى استكمال الدفع عبر بنك الراجحي.';
             }
-
-            Payment::create([
-                'order_id' => $order->id,
-                'user_id' => $user->id,
-                'transaction_id' => 'TXN-'.strtoupper(uniqid()),
-                'gateway' => $request->payment_method,
-                'amount' => $totalAmount,
-                'currency' => 'SAR',
-                'status' => 'successful',
-                'paid_at' => now(),
-            ]);
-
-            OrderStatusHistory::create([
-                'order_id' => $order->id,
-                'status' => 'pending',
-                'comment' => [
-                    'ar' => 'تم استلام الطلب وبانتظار بدء التجهيز بالفرع',
-                    'en' => 'Order received, pending branch processing',
-                ],
-                'created_by_type' => 'user',
-            ]);
-
-            $message = $this->getLocale() === 'en'
-                ? 'Pre-order created successfully. You will be notified once ready for pickup.'
-                : 'تم إنشاء الطلب بنجاح، سيتم إشعارك فور اكتمال التجهيز بالفرع.';
 
             return $this->success(new OrderResource($order->load(['branch', 'items'])), $message);
         });

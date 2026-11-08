@@ -20,7 +20,7 @@ class CreatePreOrderRequest extends BaseApiRequest
             'color_mode' => 'required|in:black_and_white,color',
             'side_mode' => 'required|in:single_sided,double_sided',
             'finishing_option_id' => 'nullable|exists:finishing_options,id',
-            'payment_method' => 'required|in:apple_pay,card,wallet',
+            'payment_method' => 'required|in:apple_pay,card,wallet,alrajhi',
             'user_notes' => 'nullable|string',
             'is_teacher' => 'nullable|boolean',
         ];

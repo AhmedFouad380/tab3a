@@ -8,7 +8,7 @@ class CreateSelfPrintOrderRequest extends BaseApiRequest
     {
         return [
             'session_token' => 'nullable|string|exists:kiosk_sessions,session_token',
-            'payment_method' => 'required|in:apple_pay,card,wallet',
+            'payment_method' => 'required|in:apple_pay,card,wallet,alrajhi',
             'is_teacher' => 'nullable|boolean',
             'page_range_selection' => 'nullable|string',
 

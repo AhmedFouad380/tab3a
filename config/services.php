@@ -35,4 +35,13 @@ return [
         ],
     ],
 
+    'alrajhi' => [
+        'base_url' => env('ALRAJHI_BASE_URL', 'https://securepayments.alrajhibank.com.sa/pg/payment/rest/'),
+        'tranportal_id' => env('ALRAJHI_TRANPORTAL_ID'),
+        'password' => env('ALRAJHI_TRANPORTAL_PASSWORD'),
+        'resource_key' => env('ALRAJHI_RESOURCE_KEY'),
+        'currency_code' => env('ALRAJHI_CURRENCY_CODE', '682'),
+        'mode' => env('ALRAJHI_MODE', 'sandbox'),
+    ],
+
 ];

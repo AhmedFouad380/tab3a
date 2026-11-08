@@ -268,4 +268,91 @@ class KioskInstantPrintingTest extends TestCase
         $this->assertNotNull($newSession);
         $this->assertEquals('waiting_scan', $newSession->status);
     }
+
+    public function test_kiosk_mobile_disconnect_cancels_session_and_resets_kiosk_screen_to_home(): void
+    {
+        $kiosk = $this->setupKiosk();
+
+        // 1. Mobile connects to kiosk
+        $connectRes = $this->postJson('/api/v1/kiosks/connect', [
+            'machine_code' => $kiosk->machine_code,
+        ]);
+        $connectRes->assertOk();
+        $sessionToken = $connectRes->json('data.session_token');
+
+        $activeSession = KioskSession::where('session_token', $sessionToken)->first();
+        $this->assertEquals('connected', $activeSession->status);
+
+        // 2. Mobile disconnects via POST /api/v1/kiosks/disconnect
+        $disconnectRes = $this->postJson('/api/v1/kiosks/disconnect', [
+            'session_token' => $sessionToken,
+        ]);
+        $disconnectRes->assertOk();
+        $disconnectRes->assertJsonPath('success', true);
+        $disconnectRes->assertJsonPath('data.status', 'cancelled');
+        $disconnectRes->assertJsonPath('data.kiosk_screen_status', 'waiting_scan');
+        $newSessionToken = $disconnectRes->json('data.new_session_token');
+        $this->assertNotEmpty($newSessionToken);
+        $this->assertNotEquals($sessionToken, $newSessionToken);
+
+        // 3. Verify original session was terminated and marked cancelled
+        $activeSession->refresh();
+        $this->assertEquals('cancelled', $activeSession->status);
+        $this->assertNotNull($activeSession->completed_at);
+
+        // 4. Verify new standby session exists with status waiting_scan
+        $newSession = KioskSession::where('session_token', $newSessionToken)->first();
+        $this->assertNotNull($newSession);
+        $this->assertEquals('waiting_scan', $newSession->status);
+
+        // 5. Verify the kiosk screen polling endpoint now delivers waiting_scan
+        $screenPollRes = $this->getJson(route('api.kiosk.screen.status', $kiosk->machine_code));
+        $screenPollRes->assertOk();
+        $screenPollRes->assertJsonPath('session.status', 'waiting_scan');
+        $screenPollRes->assertJsonPath('session.token', $newSessionToken);
+    }
+
+    public function test_kiosk_disconnect_using_machine_code(): void
+    {
+        $kiosk = $this->setupKiosk();
+
+        // 1. Mobile connects
+        $connectRes = $this->postJson('/api/v1/kiosks/connect', [
+            'machine_code' => $kiosk->machine_code,
+        ]);
+        $sessionToken = $connectRes->json('data.session_token');
+
+        // 2. Disconnect using machine_code
+        $disconnectRes = $this->postJson('/api/v1/kiosks/cancel-session', [
+            'machine_code' => $kiosk->machine_code,
+        ]);
+        $disconnectRes->assertOk();
+        $disconnectRes->assertJsonPath('success', true);
+        $disconnectRes->assertJsonPath('data.kiosk_screen_status', 'waiting_scan');
+
+        $session = KioskSession::where('session_token', $sessionToken)->first();
+        $this->assertEquals('cancelled', $session->status);
+    }
+
+    public function test_kiosk_update_session_status_cancelled_resets_screen_to_home(): void
+    {
+        $kiosk = $this->setupKiosk();
+
+        $connectRes = $this->postJson('/api/v1/kiosks/connect', [
+            'machine_code' => $kiosk->machine_code,
+        ]);
+        $sessionToken = $connectRes->json('data.session_token');
+
+        $updateRes = $this->postJson('/api/v1/kiosks/update-session-status', [
+            'session_token' => $sessionToken,
+            'status' => 'cancelled',
+        ]);
+        $updateRes->assertOk();
+        $updateRes->assertJsonPath('success', true);
+        $updateRes->assertJsonPath('data.kiosk_screen_status', 'waiting_scan');
+
+        $session = KioskSession::where('session_token', $sessionToken)->first();
+        $this->assertEquals('cancelled', $session->status);
+        $this->assertNotNull($session->completed_at);
+    }
 }

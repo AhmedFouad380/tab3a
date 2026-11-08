@@ -14,6 +14,10 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->redirectGuestsTo(fn (Request $request) => $request->is('admin/*') ? route('filament.admin.auth.login') : '/');
+        $middleware->validateCsrfTokens(except: [
+            'payments/alrajhi/callback',
+            'payments/alrajhi/error',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

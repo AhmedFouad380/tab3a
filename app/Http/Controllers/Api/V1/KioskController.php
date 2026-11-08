@@ -266,6 +266,98 @@ class KioskController extends BaseApiController
     }
 
     /**
+     * Disconnect mobile from kiosk screen, cancel active session, and return kiosk screen to home (standby).
+     */
+    public function disconnect(Request $request): JsonResponse
+    {
+        $session = null;
+        $kiosk = null;
+
+        if ($request->filled('session_token')) {
+            $session = KioskSession::where('session_token', $request->session_token)->first();
+            if ($session) {
+                $kiosk = $session->kiosk;
+            }
+        }
+
+        if (! $kiosk) {
+            $query = KioskMachine::query();
+            if ($request->filled('machine_code')) {
+                $query->where('machine_code', $request->machine_code);
+            } elseif ($request->filled('qr_token')) {
+                $query->where(function ($q) use ($request) {
+                    $q->where('qr_token', $request->qr_token)
+                        ->orWhere('machine_code', $request->qr_token);
+                });
+            } elseif ($request->filled('nfc_tag_id')) {
+                $query->where('nfc_tag_id', $request->nfc_tag_id);
+            } elseif ($request->filled('kiosk_machine_id')) {
+                $query->where('id', $request->kiosk_machine_id);
+            } else {
+                return $this->error(
+                    $this->getLocale() === 'en'
+                        ? 'Session token or machine identifier is required to disconnect'
+                        : 'مطلوب إرسال رمز الجلسة أو كود الماكينة لإلغاء الاتصال',
+                    422
+                );
+            }
+
+            $kiosk = $query->first();
+        }
+
+        if (! $kiosk) {
+            return $this->error(
+                $this->getLocale() === 'en' ? 'Kiosk machine not found' : 'لم يتم العثور على ماكينة الطباعة',
+                404
+            );
+        }
+
+        // If session was not located directly by token, find any active session on this kiosk
+        if (! $session) {
+            $session = KioskSession::where('kiosk_machine_id', $kiosk->id)
+                ->whereIn('status', ['connected', 'file_uploaded', 'awaiting_payment', 'waiting_scan', 'printing'])
+                ->latest()
+                ->first();
+        }
+
+        // 1. Terminate and mark session as cancelled
+        if ($session) {
+            $session->update([
+                'status' => 'cancelled',
+                'completed_at' => now(),
+            ]);
+        }
+
+        // 2. Reset machine status to online if it was busy
+        if ($kiosk->status === 'busy') {
+            $kiosk->update(['status' => 'online']);
+        }
+
+        // 3. Create fresh standby session so kiosk screen immediately returns to home standby (waiting_scan)
+        $newStandbySession = KioskSession::create([
+            'kiosk_machine_id' => $kiosk->id,
+            'session_token' => 'SESS-'.strtoupper(bin2hex(random_bytes(4))),
+            'status' => 'waiting_scan',
+            'expires_at' => now()->addMinutes(10),
+        ]);
+
+        return $this->success([
+            'cancelled_session_token' => $session?->session_token,
+            'status' => 'cancelled',
+            'kiosk' => [
+                'id' => $kiosk->id,
+                'machine_code' => $kiosk->machine_code,
+                'status' => $kiosk->status,
+            ],
+            'new_session_token' => $newStandbySession->session_token,
+            'kiosk_screen_status' => 'waiting_scan',
+        ], $this->getLocale() === 'en'
+            ? 'Kiosk disconnected successfully and screen returned to standby home'
+            : 'تم إلغاء الاتصال وإنهاء الجلسة وإعادة شاشة الكشك للصفحة الرئيسية بنجاح'
+        );
+    }
+
+    /**
      * Update Kiosk Session Status from Mobile (e.g. awaiting_payment, cancelled)
      */
     public function updateSessionStatus(Request $request): JsonResponse
@@ -284,6 +376,31 @@ class KioskController extends BaseApiController
             'status' => $request->status,
             'expires_at' => now()->addSeconds(90),
         ]);
+
+        if (in_array($request->status, ['completed', 'cancelled'])) {
+            $session->update([
+                'completed_at' => now(),
+            ]);
+
+            if ($session->kiosk && $session->kiosk->status === 'busy') {
+                $session->kiosk->update(['status' => 'online']);
+            }
+
+            // Create new standby session for the kiosk screen
+            $newSession = KioskSession::create([
+                'kiosk_machine_id' => $session->kiosk_machine_id,
+                'session_token' => 'SESS-'.strtoupper(bin2hex(random_bytes(4))),
+                'status' => 'waiting_scan',
+                'expires_at' => now()->addMinutes(10),
+            ]);
+
+            return $this->success([
+                'session_token' => $session->session_token,
+                'status' => $session->status,
+                'new_session_token' => $newSession->session_token,
+                'kiosk_screen_status' => 'waiting_scan',
+            ], $this->getLocale() === 'en' ? 'Kiosk screen reset to home' : 'تم إنهاء الجلسة وإعادة شاشة الكشك للرئيسية بنجاح');
+        }
 
         return $this->success([
             'session_token' => $session->session_token,

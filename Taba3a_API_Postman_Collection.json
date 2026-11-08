@@ -889,6 +889,46 @@
 					}
 				},
 				{
+					"name": "Disconnect Kiosk (إلغاء الاتصال وإنهاء الجلسة وعودة الشاشة للرئيسية)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "ar"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"session_token\": \"SESS-XXXXXXXX\",\n    \"machine_code\": \"KSK-202\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/kiosks/disconnect",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"kiosks",
+								"disconnect"
+							]
+						},
+						"description": "إلغاء اتصال الموبايل بشاشة الكشك فوراً، إنهاء الجلسة (status: cancelled)، وإعادة شاشة الكشك لوضع الاستعداد والصفحة الرئيسية (waiting_scan) مع رمز QR جديد."
+					}
+				},
+				{
 					"name": "Verify Kiosk Machine (فحص جاهزية الماكينة وسعة الورق)",
 					"request": {
 						"auth": {

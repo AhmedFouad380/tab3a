@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\OrderController;
 use App\Http\Controllers\Api\V1\PricingController;
 use App\Http\Controllers\Api\V1\WalletController;
+use App\Http\Controllers\Payment\AlRajhiPaymentController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -49,6 +50,8 @@ Route::prefix('v1')->group(function () {
     // 5. Kiosk Verification, Screen Connect & Real-time State Sync
     Route::post('/kiosks/verify-machine', [KioskController::class, 'verifyMachine']);
     Route::post('/kiosks/connect', [KioskController::class, 'connect']);
+    Route::post('/kiosks/disconnect', [KioskController::class, 'disconnect']);
+    Route::post('/kiosks/cancel-session', [KioskController::class, 'disconnect']);
     Route::post('/kiosks/update-session-status', [KioskController::class, 'updateSessionStatus']);
     Route::post('/kiosks/extend-session', [KioskController::class, 'extendSession']);
 
@@ -82,6 +85,11 @@ Route::prefix('v1')->group(function () {
             Route::get('/', [NotificationController::class, 'index']);
             Route::put('/{id}/read', [NotificationController::class, 'markAsRead']);
             Route::put('/read-all', [NotificationController::class, 'markAllAsRead']);
+        });
+
+        // Payments
+        Route::prefix('payments')->group(function () {
+            Route::post('/alrajhi/initiate', [AlRajhiPaymentController::class, 'apiInitiate']);
         });
 
         // Wallet
