@@ -95,16 +95,35 @@ class KioskController extends BaseApiController
             ];
         } elseif (! $tonerPassed) {
             $failedStep = 'toner';
-            $errorMessage = [
-                'ar' => 'مستوى الحبر غير كافٍ لإتمام الطباعة بجودة مناسبة. يرجى تجربة ماكينة أخرى.',
-                'en' => 'Toner level is too low to complete this print job. Please try another kiosk.',
-            ];
+            if ($colorMode === 'color' && $kiosk->black_toner_level >= 5) {
+                $errorMessage = [
+                    'ar' => 'مستوى الحبر الملون في الماكينة غير كافٍ لإتمام الطباعة الملونة. يمكنك اختيار الطباعة بالأبيض والأسود لإتمام العملية بنجاح أو تجربة ماكينة أخرى.',
+                    'en' => 'Color toner level is too low to print in color. You can switch to Black & White to proceed, or choose another kiosk.',
+                ];
+            } else {
+                $errorMessage = [
+                    'ar' => 'مستوى الحبر غير كافٍ لإتمام الطباعة بجودة مناسبة. يرجى تجربة ماكينة أخرى.',
+                    'en' => 'Toner level is too low to complete this print job. Please try another kiosk.',
+                ];
+            }
         } elseif (! $settingsPassed) {
             $failedStep = 'settings';
-            $errorMessage = [
-                'ar' => 'الماكينة الحالية لا تدعم بعض خيارات الطباعة المحددة (مثل الألوان أو الطباعة على الوجهين).',
-                'en' => 'This machine does not support the selected options (Color / Duplex).',
-            ];
+            if ($colorMode === 'color' && ! $kiosk->supports_color) {
+                $errorMessage = [
+                    'ar' => 'ماكينة الطباعة الحالية تدعم الطباعة بالأبيض والأسود فقط. يرجى اختيار الطباعة بالأبيض والأسود أو استخدام ماكينة أخرى تدعم الألوان.',
+                    'en' => 'This kiosk only supports Black & White printing. Please switch to B&W or choose a color-capable machine.',
+                ];
+            } elseif ($sideMode === 'double_sided' && ! $kiosk->supports_duplex) {
+                $errorMessage = [
+                    'ar' => 'ماكينة الطباعة الحالية لا تدعم الطباعة على الوجهين. يرجى اختيار الطباعة على وجه واحد.',
+                    'en' => 'This kiosk does not support double-sided printing. Please choose single-sided printing.',
+                ];
+            } else {
+                $errorMessage = [
+                    'ar' => 'الماكينة الحالية لا تدعم بعض خيارات الطباعة المحددة (مثل الألوان أو الطباعة على الوجهين).',
+                    'en' => 'This machine does not support the selected options (Color / Duplex).',
+                ];
+            }
         }
 
         // Save Health Check Log
@@ -122,6 +141,9 @@ class KioskController extends BaseApiController
                 'a4_sheets' => $kiosk->paper_tray_a4_sheets,
                 'a3_sheets' => $kiosk->paper_tray_a3_sheets,
                 'black_toner' => $kiosk->black_toner_level,
+                'cyan_toner' => $kiosk->cyan_toner_level,
+                'magenta_toner' => $kiosk->magenta_toner_level,
+                'yellow_toner' => $kiosk->yellow_toner_level,
                 'status' => $kiosk->status,
             ],
         ]);
@@ -163,6 +185,7 @@ class KioskController extends BaseApiController
                 'location' => $this->localize($kiosk->location_description),
                 'status' => $kiosk->status,
                 'paper_tray_a4_sheets' => $kiosk->paper_tray_a4_sheets,
+                'paper_tray_a3_sheets' => $kiosk->paper_tray_a3_sheets,
             ],
             'checks' => [
                 'connection_passed' => $connectionPassed,
@@ -170,6 +193,29 @@ class KioskController extends BaseApiController
                 'toner_passed' => $tonerPassed,
                 'settings_passed' => $settingsPassed,
                 'is_ready_to_print' => $isReadyToPrint,
+                'supports_color' => (bool) $kiosk->supports_color,
+                'supports_duplex' => (bool) $kiosk->supports_duplex,
+                'is_bw_ready' => $kiosk->black_toner_level >= 5,
+                'is_color_ready' => $kiosk->supports_color
+                    && $kiosk->cyan_toner_level >= 5
+                    && $kiosk->magenta_toner_level >= 5
+                    && $kiosk->yellow_toner_level >= 5,
+            ],
+            'capacity' => [
+                'paper_size' => $paperSize,
+                'tray_sheets_available' => $availableSheets,
+                'max_pages_single_sided' => $availableSheets,
+                'max_pages_double_sided' => $availableSheets * 2,
+                'max_sheets_per_job' => $kiosk->getEffectiveMaxSheets(),
+                'effective_max_pages_single' => min($availableSheets, $kiosk->getEffectiveMaxSheets()),
+                'effective_max_pages_double' => min($availableSheets, $kiosk->getEffectiveMaxSheets()) * 2,
+                'supports_color' => (bool) $kiosk->supports_color,
+                'supports_duplex' => (bool) $kiosk->supports_duplex,
+                'is_bw_ready' => $kiosk->black_toner_level >= 5,
+                'is_color_ready' => $kiosk->supports_color
+                    && $kiosk->cyan_toner_level >= 5
+                    && $kiosk->magenta_toner_level >= 5
+                    && $kiosk->yellow_toner_level >= 5,
             ],
             'constraints' => [
                 'max_file_size_mb' => $kiosk->getEffectiveMaxFileSizeMb(),
@@ -261,6 +307,20 @@ class KioskController extends BaseApiController
                 'min_order_price' => $kiosk->getEffectiveMinOrderPrice(),
                 'max_sheets_per_job' => $kiosk->getEffectiveMaxSheets(),
                 'currency' => 'SAR',
+            ],
+            'capacity' => [
+                'paper_tray_a4_sheets' => (int) $kiosk->paper_tray_a4_sheets,
+                'paper_tray_a3_sheets' => (int) $kiosk->paper_tray_a3_sheets,
+                'max_pages_a4_single' => (int) $kiosk->paper_tray_a4_sheets,
+                'max_pages_a4_double' => (int) ($kiosk->paper_tray_a4_sheets * 2),
+                'max_job_sheets_limit' => $kiosk->getEffectiveMaxSheets(),
+                'supports_color' => (bool) $kiosk->supports_color,
+                'supports_duplex' => (bool) $kiosk->supports_duplex,
+                'is_bw_ready' => $kiosk->black_toner_level >= 5,
+                'is_color_ready' => $kiosk->supports_color
+                    && $kiosk->cyan_toner_level >= 5
+                    && $kiosk->magenta_toner_level >= 5
+                    && $kiosk->yellow_toner_level >= 5,
             ],
         ], $this->getLocale() === 'en' ? 'Connected to kiosk successfully' : 'تم الاتصال بالماكينة وتحديث الشاشة بنجاح');
     }

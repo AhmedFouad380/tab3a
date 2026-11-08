@@ -16,6 +16,7 @@ class KioskSession extends Model
         'status',
         'file_name',
         'file_path',
+        'print_file_path',
         'file_size_bytes',
         'detected_page_count',
         'copies_count',

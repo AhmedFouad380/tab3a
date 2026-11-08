@@ -234,6 +234,17 @@ class FileController extends BaseApiController
             'total_amount' => $totalAmount,
             'currency' => 'SAR',
             'is_teacher' => $request->boolean('is_teacher'),
+            'capacity' => $kiosk ? [
+                'paper_size' => $paperSize,
+                'tray_sheets_available' => $paperSize === 'A3' ? (int) $kiosk->paper_tray_a3_sheets : (int) $kiosk->paper_tray_a4_sheets,
+                'supports_color' => (bool) $kiosk->supports_color,
+                'supports_duplex' => (bool) $kiosk->supports_duplex,
+                'is_bw_ready' => $kiosk->black_toner_level >= 5,
+                'is_color_ready' => $kiosk->supports_color
+                    && $kiosk->cyan_toner_level >= 5
+                    && $kiosk->magenta_toner_level >= 5
+                    && $kiosk->yellow_toner_level >= 5,
+            ] : null,
             'kiosk_session_token' => $kioskSession?->session_token,
             'kiosk_screen_status' => $kioskSession?->status,
         ]);

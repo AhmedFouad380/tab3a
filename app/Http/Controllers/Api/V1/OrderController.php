@@ -15,6 +15,7 @@ use App\Models\OrderStatusHistory;
 use App\Models\Payment;
 use App\Models\PricingRule;
 use App\Models\WalletTransaction;
+use App\Services\Print\DocumentPrintPreparationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -61,17 +62,64 @@ class OrderController extends BaseApiController
 
         $pagesToPrint = $detectedPageCount;
         if ($request->filled('page_range_selection') && $request->page_range_selection !== 'all') {
-            $range = $request->page_range_selection;
+            $range = trim($request->page_range_selection);
             if (str_contains($range, '-')) {
                 $parts = explode('-', $range);
-                $pagesToPrint = max(1, ((int) $parts[1] - (int) $parts[0] + 1));
+                $start = max(1, (int) ($parts[0] ?? 1));
+                $end = min($detectedPageCount, (int) ($parts[1] ?? $detectedPageCount));
+                $pagesToPrint = max(1, ($end - $start + 1));
+            } elseif (str_contains($range, ',')) {
+                $pagesList = array_filter(array_map('intval', explode(',', $range)));
+                $pagesToPrint = max(1, count($pagesList));
+            } elseif (is_numeric($range)) {
+                $pagesToPrint = 1;
             }
         }
 
         $sheetsPerCopy = $sideMode === 'double_sided' ? (int) ceil($pagesToPrint / 2) : $pagesToPrint;
         $totalSheets = $sheetsPerCopy * $copies;
 
-        // 1. فحص الحد الأقصى لعدد الأوراق المسموح به للطباعة الفورية
+        // 1. فحص توافق ودعم الألوان ومستويات الأحبار
+        if ($colorMode === 'color') {
+            if (! $kiosk->supports_color) {
+                return $this->error(
+                    $this->getLocale() === 'en'
+                        ? 'This kiosk machine only supports Black & White printing. Please switch to Black & White.'
+                        : 'ماكينة الطباعة المحددة تدعم الطباعة بالأبيض والأسود فقط. يرجى اختيار الطباعة بالأبيض والأسود.',
+                    422
+                );
+            }
+
+            if ($kiosk->cyan_toner_level < 5 || $kiosk->magenta_toner_level < 5 || $kiosk->yellow_toner_level < 5) {
+                return $this->error(
+                    $this->getLocale() === 'en'
+                        ? 'Color toner levels are too low on this machine. Please switch to Black & White or select another kiosk.'
+                        : 'مستوى الحبر الملون في الماكينة غير كافٍ للطباعة الملونة. يمكنك اختيار الطباعة بالأبيض والأسود لإتمام العملية.',
+                    422
+                );
+            }
+        } else {
+            if ($kiosk->black_toner_level < 5) {
+                return $this->error(
+                    $this->getLocale() === 'en'
+                        ? 'Black toner level is too low to print. Please select another kiosk.'
+                        : 'مستوى الحبر الأسود غير كافٍ لإتمام الطباعة. يرجى تجربة ماكينة أخرى.',
+                    422
+                );
+            }
+        }
+
+        // 2. فحص دعم الطباعة على الوجهين
+        if ($sideMode === 'double_sided' && ! $kiosk->supports_duplex) {
+            return $this->error(
+                $this->getLocale() === 'en'
+                    ? 'This kiosk machine does not support double-sided printing. Please choose single-sided.'
+                    : 'ماكينة الطباعة المحددة لا تدعم الطباعة على الوجهين. يرجى اختيار الطباعة على وجه واحد.',
+                422
+            );
+        }
+
+        // 3. فحص الحد الأقصى لعدد الأوراق المسموح به للطباعة الفورية
         $maxAllowedSheets = $kiosk->getEffectiveMaxSheets();
         if ($totalSheets > $maxAllowedSheets) {
             return $this->error(
@@ -82,7 +130,7 @@ class OrderController extends BaseApiController
             );
         }
 
-        // 2. فحص رصيد الورق الفعلي المتاح في درج الماكينة
+        // 4. فحص رصيد الورق الفعلي المتاح في درج الماكينة
         $availableInTray = $paperSize === 'A3' ? $kiosk->paper_tray_a3_sheets : $kiosk->paper_tray_a4_sheets;
         if ($totalSheets > $availableInTray) {
             return $this->error(
@@ -93,7 +141,7 @@ class OrderController extends BaseApiController
             );
         }
 
-        // 3. فحص الحد الأقصى لحجم الملف
+        // 5. فحص الحد الأقصى لحجم الملف
         $maxFileSizeMb = $kiosk->getEffectiveMaxFileSizeMb();
         if ($fileSizeBytes > 0 && ($fileSizeBytes > $maxFileSizeMb * 1024 * 1024)) {
             return $this->error(
@@ -153,10 +201,18 @@ class OrderController extends BaseApiController
                 'printer_job_id' => 'JOB-'.uniqid(),
             ]);
 
+            $printService = app(DocumentPrintPreparationService::class);
+            $printFilePath = $printService->preparePrintFile(
+                $filePath,
+                $colorMode,
+                $request->page_range_selection ?? 'all'
+            );
+
             OrderItem::create([
                 'order_id' => $order->id,
                 'original_file_name' => $originalFileName,
                 'file_path' => $filePath,
+                'print_file_path' => $printFilePath,
                 'file_extension' => $fileExtension,
                 'file_size_bytes' => $fileSizeBytes,
                 'detected_page_count' => $detectedPageCount,
@@ -186,6 +242,7 @@ class OrderController extends BaseApiController
             if ($session) {
                 $session->update([
                     'status' => $isAlrajhi ? 'awaiting_payment' : 'printing',
+                    'print_file_path' => $printFilePath,
                     'order_id' => $order->id,
                     'completed_at' => $isAlrajhi ? null : now(),
                 ]);

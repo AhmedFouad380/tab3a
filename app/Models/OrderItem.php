@@ -13,6 +13,7 @@ class OrderItem extends Model
         'order_id',
         'original_file_name',
         'file_path',
+        'print_file_path',
         'file_extension',
         'file_size_bytes',
         'detected_page_count',

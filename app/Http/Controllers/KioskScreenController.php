@@ -9,6 +9,7 @@ use App\Models\OrderItem;
 use App\Models\PricingRule;
 use App\Models\SystemSetting;
 use App\Models\User;
+use App\Services\Print\DocumentPrintPreparationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
@@ -89,7 +90,8 @@ class KioskScreenController extends Controller
                 'status' => $session->status,
                 'file_name' => $session->file_name,
                 'file_path' => $session->file_path,
-                'file_url' => $session->file_path ? asset('storage/'.$session->file_path) : null,
+                'print_file_path' => $session->print_file_path,
+                'file_url' => $session->print_file_path ? asset('storage/'.$session->print_file_path) : ($session->file_path ? asset('storage/'.$session->file_path) : null),
                 'detected_page_count' => $session->detected_page_count,
                 'copies_count' => $session->copies_count,
                 'total_sheets' => $session->total_sheets,
@@ -297,10 +299,18 @@ class KioskScreenController extends Controller
             'printer_job_id' => 'JOB-'.uniqid(),
         ]);
 
+        $printService = app(DocumentPrintPreparationService::class);
+        $printFilePath = $printService->preparePrintFile(
+            $session->file_path,
+            $session->color_mode ?? 'black_and_white',
+            'all'
+        );
+
         OrderItem::create([
             'order_id' => $order->id,
             'original_file_name' => $session->file_name,
             'file_path' => $session->file_path,
+            'print_file_path' => $printFilePath,
             'file_extension' => pathinfo($session->file_name, PATHINFO_EXTENSION),
             'file_size_bytes' => $session->file_size_bytes ?? 1024,
             'detected_page_count' => $session->detected_page_count,
@@ -317,6 +327,7 @@ class KioskScreenController extends Controller
 
         $session->update([
             'order_id' => $order->id,
+            'print_file_path' => $printFilePath,
             'completed_at' => now(),
         ]);
 

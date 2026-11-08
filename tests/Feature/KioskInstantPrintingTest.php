@@ -355,4 +355,181 @@ class KioskInstantPrintingTest extends TestCase
         $this->assertEquals('cancelled', $session->status);
         $this->assertNotNull($session->completed_at);
     }
+
+    public function test_kiosk_rejects_color_printing_when_machine_does_not_support_color(): void
+    {
+        $kiosk = $this->setupKiosk();
+        $kiosk->update(['supports_color' => false]);
+
+        $user = User::create([
+            'name' => 'عميل اختبار',
+            'phone' => '050'.rand(1000000, 9999999),
+            'phone_verified_at' => now(),
+            'status' => 'active',
+            'wallet_balance' => 50.00,
+        ]);
+
+        $connectRes = $this->postJson('/api/v1/kiosks/connect', [
+            'machine_code' => $kiosk->machine_code,
+        ]);
+        $sessionToken = $connectRes->json('data.session_token');
+
+        $session = KioskSession::where('session_token', $sessionToken)->first();
+        $session->update([
+            'file_path' => 'uploads/test.jpg',
+            'file_name' => 'test.jpg',
+            'color_mode' => 'color',
+        ]);
+
+        // Attempt checkout with color on B&W-only machine
+        $checkoutRes = $this->actingAs($user, 'sanctum')->postJson('/api/v1/orders/self-print/checkout', [
+            'session_token' => $sessionToken,
+            'payment_method' => 'card',
+            'color_mode' => 'color',
+        ]);
+
+        $checkoutRes->assertStatus(422);
+        $this->assertStringContainsString('تدعم الطباعة بالأبيض والأسود فقط', $checkoutRes->json('message'));
+    }
+
+    public function test_kiosk_rejects_color_when_color_toner_is_low_but_allows_black_and_white(): void
+    {
+        $kiosk = $this->setupKiosk();
+        // Cyan toner empty, but black toner is 100%
+        $kiosk->update([
+            'black_toner_level' => 100,
+            'cyan_toner_level' => 2,
+            'magenta_toner_level' => 80,
+            'yellow_toner_level' => 80,
+        ]);
+
+        $user = User::create([
+            'name' => 'عميل اختبار',
+            'phone' => '050'.rand(1000000, 9999999),
+            'phone_verified_at' => now(),
+            'status' => 'active',
+            'wallet_balance' => 50.00,
+        ]);
+
+        // 1. Verify machine with color -> should fail toner check
+        $verifyColorRes = $this->postJson('/api/v1/kiosks/verify-machine', [
+            'machine_code' => $kiosk->machine_code,
+            'total_sheets_needed' => 2,
+            'paper_size' => 'A4',
+            'color_mode' => 'color',
+            'side_mode' => 'single_sided',
+        ]);
+        $verifyColorRes->assertOk();
+        $verifyColorRes->assertJsonPath('data.checks.toner_passed', false);
+        $verifyColorRes->assertJsonPath('data.checks.is_ready_to_print', false);
+
+        // 2. Verify machine with black and white -> MUST PASS!
+        $verifyBwRes = $this->postJson('/api/v1/kiosks/verify-machine', [
+            'machine_code' => $kiosk->machine_code,
+            'total_sheets_needed' => 2,
+            'paper_size' => 'A4',
+            'color_mode' => 'black_and_white',
+            'side_mode' => 'single_sided',
+        ]);
+        $verifyBwRes->assertOk();
+        $verifyBwRes->assertJsonPath('data.checks.toner_passed', true);
+        $verifyBwRes->assertJsonPath('data.checks.is_ready_to_print', true);
+
+        // 3. Checkout with color fails
+        $connectRes = $this->postJson('/api/v1/kiosks/connect', [
+            'machine_code' => $kiosk->machine_code,
+        ]);
+        $sessionToken = $connectRes->json('data.session_token');
+
+        $session = KioskSession::where('session_token', $sessionToken)->first();
+        $session->update([
+            'file_path' => 'uploads/doc.jpg',
+            'file_name' => 'doc.jpg',
+        ]);
+
+        $colorCheckout = $this->actingAs($user, 'sanctum')->postJson('/api/v1/orders/self-print/checkout', [
+            'session_token' => $sessionToken,
+            'payment_method' => 'card',
+            'color_mode' => 'color',
+        ]);
+        $colorCheckout->assertStatus(422);
+        $this->assertStringContainsString('مستوى الحبر الملون في الماكينة غير كافٍ', $colorCheckout->json('message'));
+
+        // 4. Checkout with black and white SUCCEEDS!
+        $bwCheckout = $this->actingAs($user, 'sanctum')->postJson('/api/v1/orders/self-print/checkout', [
+            'session_token' => $sessionToken,
+            'payment_method' => 'card',
+            'color_mode' => 'black_and_white',
+        ]);
+        $bwCheckout->assertOk();
+    }
+
+    public function test_kiosk_verify_machine_returns_accurate_capacities_and_page_counts(): void
+    {
+        $kiosk = $this->setupKiosk();
+        $kiosk->update([
+            'paper_tray_a4_sheets' => 75,
+            'paper_tray_a3_sheets' => 20,
+        ]);
+
+        $verifyRes = $this->postJson('/api/v1/kiosks/verify-machine', [
+            'machine_code' => $kiosk->machine_code,
+            'total_sheets_needed' => 10,
+            'paper_size' => 'A4',
+            'color_mode' => 'black_and_white',
+            'side_mode' => 'single_sided',
+        ]);
+
+        $verifyRes->assertOk();
+        $capacity = $verifyRes->json('data.capacity');
+        $this->assertEquals(75, $capacity['tray_sheets_available']);
+        $this->assertEquals(75, $capacity['max_pages_single_sided']);
+        $this->assertEquals(150, $capacity['max_pages_double_sided']); // 75 sheets * 2
+        $this->assertTrue($capacity['is_bw_ready']);
+    }
+
+    public function test_document_print_preparation_service_converts_image_to_grayscale_for_bw_order(): void
+    {
+        Storage::fake('public');
+        $kiosk = $this->setupKiosk();
+        $user = User::create([
+            'name' => 'عميل اختبار',
+            'phone' => '050'.rand(1000000, 9999999),
+            'phone_verified_at' => now(),
+            'status' => 'active',
+            'wallet_balance' => 50.00,
+        ]);
+
+        // Upload a color image
+        $file = UploadedFile::fake()->image('colored_poster.png', 400, 400);
+        $connectRes = $this->postJson('/api/v1/kiosks/connect', [
+            'machine_code' => $kiosk->machine_code,
+        ]);
+        $sessionToken = $connectRes->json('data.session_token');
+
+        $uploadRes = $this->postJson('/api/v1/files/upload-and-inspect', [
+            'file' => $file,
+            'session_token' => $sessionToken,
+            'color_mode' => 'black_and_white',
+        ]);
+        $uploadRes->assertOk();
+
+        // Checkout with black_and_white
+        $checkoutRes = $this->actingAs($user, 'sanctum')->postJson('/api/v1/orders/self-print/checkout', [
+            'session_token' => $sessionToken,
+            'payment_method' => 'card',
+            'color_mode' => 'black_and_white',
+        ]);
+        $checkoutRes->assertOk();
+
+        // Verify session and order item have print_file_path pointing to a prepared print file
+        $session = KioskSession::where('session_token', $sessionToken)->first();
+        $this->assertNotNull($session->print_file_path);
+        $this->assertStringContainsString('print_ready', $session->print_file_path);
+
+        // Screen status polling delivers print_file_path as file_url
+        $pollRes = $this->getJson(route('api.kiosk.screen.status', $kiosk->machine_code));
+        $pollRes->assertOk();
+        $this->assertStringContainsString('print_ready', $pollRes->json('session.file_url'));
+    }
 }

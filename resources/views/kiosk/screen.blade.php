@@ -1099,8 +1099,9 @@
                 } else if (status === 'printing') {
                     document.getElementById('view-printing').style.display = 'flex';
                     const fileUrl = (data && data.session) ? data.session.file_url : null;
+                    const colorMode = (data && data.session) ? data.session.color_mode : 'black_and_white';
                     startPrintSimulation(data && data.session ? data.session.token : currentSessionToken);
-                    triggerBrowserPrint(fileUrl);
+                    triggerBrowserPrint(fileUrl, colorMode);
                 } else if (status === 'completed') {
                     document.getElementById('view-completed').style.display = 'flex';
                 } else if (status === 'cancelled' || status === 'expired') {
@@ -1128,7 +1129,7 @@
 
         let hasTriggeredPrintForToken = null;
 
-        function triggerBrowserPrint(fileUrl) {
+        function triggerBrowserPrint(fileUrl, colorMode) {
             if (!fileUrl) {
                 console.warn('Physical print: no file_url provided');
                 return;
@@ -1137,27 +1138,51 @@
             if (hasTriggeredPrintForToken === currentSessionToken) return;
             hasTriggeredPrintForToken = currentSessionToken;
 
-            console.log('Sending direct print command to kiosk printer for:', fileUrl);
+            console.log('Sending direct print command to kiosk printer for:', fileUrl, 'colorMode:', colorMode);
 
             let frame = document.getElementById('kiosk-print-frame');
-            if (!frame) {
-                frame = document.createElement('iframe');
-                frame.id = 'kiosk-print-frame';
-                frame.style.position = 'fixed';
-                frame.style.right = '0';
-                frame.style.bottom = '0';
-                frame.style.width = '0';
-                frame.style.height = '0';
-                frame.style.border = '0';
-                frame.style.opacity = '0';
-                frame.style.pointerEvents = 'none';
-                document.body.appendChild(frame);
+            if (frame) {
+                frame.remove();
             }
+
+            frame = document.createElement('iframe');
+            frame.id = 'kiosk-print-frame';
+            frame.style.position = 'fixed';
+            frame.style.right = '0';
+            frame.style.bottom = '0';
+            frame.style.width = '0';
+            frame.style.height = '0';
+            frame.style.border = '0';
+            frame.style.opacity = '0';
+            frame.style.pointerEvents = 'none';
+            document.body.appendChild(frame);
 
             frame.src = fileUrl;
 
             frame.onload = function() {
                 try {
+                    try {
+                        const frameDoc = frame.contentDocument || frame.contentWindow.document;
+                        if (frameDoc && colorMode === 'black_and_white') {
+                            const style = frameDoc.createElement('style');
+                            style.textContent = `
+                                @media print {
+                                    * {
+                                        filter: grayscale(100%) !important;
+                                        -webkit-filter: grayscale(100%) !important;
+                                    }
+                                    img, canvas, svg, body {
+                                        filter: grayscale(100%) contrast(110%) !important;
+                                        -webkit-filter: grayscale(100%) contrast(110%) !important;
+                                    }
+                                }
+                            `;
+                            frameDoc.head?.appendChild(style);
+                        }
+                    } catch (e) {
+                        // ignore iframe cross-origin restrictions
+                    }
+
                     setTimeout(() => {
                         console.log('Triggering iframe window.print()');
                         frame.contentWindow.focus();
