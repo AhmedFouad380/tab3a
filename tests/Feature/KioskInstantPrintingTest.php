@@ -532,4 +532,49 @@ class KioskInstantPrintingTest extends TestCase
         $pollRes->assertOk();
         $this->assertStringContainsString('print_ready', $pollRes->json('session.file_url'));
     }
+
+    public function test_upload_and_inspect_rejects_when_sheets_exceed_kiosk_max_limit(): void
+    {
+        Storage::fake('public');
+        $kiosk = $this->setupKiosk();
+        // Limit kiosk to 1 sheet max
+        $kiosk->update(['max_sheets_per_job' => 1]);
+
+        $connectRes = $this->postJson('/api/v1/kiosks/connect', [
+            'machine_code' => $kiosk->machine_code,
+        ]);
+        $sessionToken = $connectRes->json('data.session_token');
+
+        // Upload an image with 5 copies -> 5 sheets > 1 sheet allowed
+        $file = UploadedFile::fake()->image('document.jpg', 300, 300);
+        $uploadRes = $this->postJson('/api/v1/files/upload-and-inspect', [
+            'file' => $file,
+            'session_token' => $sessionToken,
+            'copies' => 5,
+        ]);
+
+        $uploadRes->assertStatus(422);
+        $this->assertStringContainsString('الحد الأقصى المسموح به للطباعة الفورية', $uploadRes->json('message'));
+        $this->assertEquals(5, $uploadRes->json('errors.total_sheets_needed'));
+        $this->assertEquals(1, $uploadRes->json('errors.max_allowed_sheets'));
+    }
+
+    public function test_calculate_price_rejects_when_sheets_exceed_kiosk_max_limit(): void
+    {
+        $kiosk = $this->setupKiosk();
+        $kiosk->update(['max_sheets_per_job' => 2]);
+
+        $calcRes = $this->postJson('/api/v1/files/calculate-price', [
+            'service_type' => 'self_printing',
+            'kiosk_machine_id' => $kiosk->id,
+            'detected_page_count' => 5,
+            'copies_count' => 1,
+            'paper_size' => 'A4',
+            'color_mode' => 'black_and_white',
+            'side_mode' => 'single_sided',
+        ]);
+
+        $calcRes->assertStatus(422);
+        $this->assertStringContainsString('الحد الأقصى المسموح به للطباعة الفورية', $calcRes->json('message'));
+    }
 }

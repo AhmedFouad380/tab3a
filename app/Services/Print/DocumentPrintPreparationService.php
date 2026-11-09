@@ -112,6 +112,10 @@ class DocumentPrintPreparationService
      */
     protected function convertPdfToGrayscaleWithGhostscript(string $inputPath, string $outputPath): bool
     {
+        if (! $this->isExecAvailable()) {
+            return false;
+        }
+
         $gsBinary = $this->findGhostscriptBinary();
         if (! $gsBinary) {
             return false;
@@ -125,6 +129,8 @@ class DocumentPrintPreparationService
                 escapeshellarg($inputPath)
             );
 
+            $output = [];
+            $returnCode = 1;
             exec($cmd, $output, $returnCode);
 
             return $returnCode === 0 && file_exists($outputPath) && filesize($outputPath) > 0;
@@ -140,15 +146,48 @@ class DocumentPrintPreparationService
      */
     protected function findGhostscriptBinary(): ?string
     {
+        $directPaths = ['/usr/bin/gs', '/usr/local/bin/gs', '/opt/homebrew/bin/gs'];
+        foreach ($directPaths as $path) {
+            if (@file_exists($path) && @is_executable($path)) {
+                return $path;
+            }
+        }
+
+        if (! $this->isExecAvailable()) {
+            return null;
+        }
+
         $possiblePaths = ['gs', '/usr/bin/gs', '/usr/local/bin/gs', '/opt/homebrew/bin/gs'];
 
         foreach ($possiblePaths as $path) {
-            $check = @exec("which $path 2>/dev/null");
-            if (! empty($check) && is_executable($check)) {
-                return $check;
+            $output = [];
+            $returnCode = 1;
+            @exec("which $path 2>/dev/null", $output, $returnCode);
+            if ($returnCode === 0 && ! empty($output[0]) && @is_executable($output[0])) {
+                return $output[0];
             }
         }
 
         return null;
+    }
+
+    /**
+     * Safely determine if the shell exec() function is enabled and usable on this PHP environment.
+     */
+    protected function isExecAvailable(): bool
+    {
+        if (! function_exists('exec')) {
+            return false;
+        }
+
+        $disabled = (string) ini_get('disable_functions');
+        if (! empty($disabled)) {
+            $disabledList = array_map('trim', explode(',', strtolower($disabled)));
+            if (in_array('exec', $disabledList, true)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

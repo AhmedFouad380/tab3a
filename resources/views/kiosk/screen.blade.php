@@ -1100,8 +1100,9 @@
                     document.getElementById('view-printing').style.display = 'flex';
                     const fileUrl = (data && data.session) ? data.session.file_url : null;
                     const colorMode = (data && data.session) ? data.session.color_mode : 'black_and_white';
+                    const copies = (data && data.session && data.session.copies_count) ? parseInt(data.session.copies_count) : 1;
                     startPrintSimulation(data && data.session ? data.session.token : currentSessionToken);
-                    triggerBrowserPrint(fileUrl, colorMode);
+                    triggerBrowserPrint(fileUrl, colorMode, copies);
                 } else if (status === 'completed') {
                     document.getElementById('view-completed').style.display = 'flex';
                 } else if (status === 'cancelled' || status === 'expired') {
@@ -1129,7 +1130,7 @@
 
         let hasTriggeredPrintForToken = null;
 
-        function triggerBrowserPrint(fileUrl, colorMode) {
+        function triggerBrowserPrint(fileUrl, colorMode, copies = 1) {
             if (!fileUrl) {
                 console.warn('Physical print: no file_url provided');
                 return;
@@ -1138,7 +1139,7 @@
             if (hasTriggeredPrintForToken === currentSessionToken) return;
             hasTriggeredPrintForToken = currentSessionToken;
 
-            console.log('Sending direct print command to kiosk printer for:', fileUrl, 'colorMode:', colorMode);
+            console.log('Sending direct print command to kiosk printer for:', fileUrl, 'colorMode:', colorMode, 'copies:', copies);
 
             let frame = document.getElementById('kiosk-print-frame');
             if (frame) {
@@ -1184,9 +1185,14 @@
                     }
 
                     setTimeout(() => {
-                        console.log('Triggering iframe window.print()');
-                        frame.contentWindow.focus();
-                        frame.contentWindow.print();
+                        const totalCopies = Math.max(1, parseInt(copies) || 1);
+                        console.log('Triggering iframe window.print() for', totalCopies, 'copies');
+                        for (let c = 0; c < totalCopies; c++) {
+                            setTimeout(() => {
+                                frame.contentWindow.focus();
+                                frame.contentWindow.print();
+                            }, c * 1500);
+                        }
                     }, 500);
                 } catch (e) {
                     console.error('Error invoking silent frame print:', e);
