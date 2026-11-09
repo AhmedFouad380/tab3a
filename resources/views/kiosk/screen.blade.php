@@ -835,15 +835,15 @@
 
             <!-- ================= Stage 2: Connected State ================= -->
             <div class="center-state" id="view-connected" style="display: none;">
-                <div class="state-big-icon" style="color: #10b981;">
+                <div class="state-big-icon" style="color: #005bb5;">
                     <i class="fa-solid fa-link"></i>
                 </div>
-                <h2 class="state-title" style="color: #059669;">تم ربط هاتفك بنجاح!</h2>
+                <h2 class="state-title" style="color: #005bb5;">تم ربط هاتفك بنجاح!</h2>
                 <p class="state-subtitle">
                     يرجى الآن اختيار المستند وتحديد إعدادات الطباعة من شاشة جوالك.
                 </p>
                 <div style="font-size: 0.95rem; color: var(--text-muted); display: flex; align-items: center; gap: 8px;">
-                    <div class="status-dot"></div> بانتظار رفع الملف من هاتفك...
+                    <div class="status-dot" style="background-color: #005bb5; box-shadow: 0 0 0 3px rgba(0, 91, 181, 0.2);"></div> بانتظار رفع الملف من هاتفك...
                 </div>
             </div>
 
@@ -883,10 +883,10 @@
 
             <!-- ================= Stage 4: Awaiting Payment ================= -->
             <div class="center-state" id="view-payment" style="display: none;">
-                <div class="state-big-icon" style="color: #f59e0b;">
+                <div class="state-big-icon" style="color: #005bb5;">
                     <i class="fa-solid fa-credit-card"></i>
                 </div>
-                <h2 class="state-title" style="color: #d97706;">برجاء إتمام الدفع عبر الجوال</h2>
+                <h2 class="state-title" style="color: #005bb5;">برجاء إتمام الدفع عبر الجوال</h2>
                 <p class="state-subtitle" style="margin-bottom: 8px;">
                     إجمالي المبلغ المطلوب: <strong id="pay-total-amount" class="num-font" style="color: #005bb5; font-size: 1.4rem;">0.00 ر.س</strong>
                 </p>
