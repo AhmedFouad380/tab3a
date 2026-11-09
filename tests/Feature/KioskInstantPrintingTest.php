@@ -577,4 +577,64 @@ class KioskInstantPrintingTest extends TestCase
         $calcRes->assertStatus(422);
         $this->assertStringContainsString('الحد الأقصى المسموح به للطباعة الفورية', $calcRes->json('message'));
     }
+
+    public function test_calculate_price_updates_kiosk_session_and_validates_constraints(): void
+    {
+        $kiosk = $this->setupKiosk();
+        $kiosk->update([
+            'max_sheets_per_job' => 20,
+            'supports_color' => true,
+            'paper_tray_a4_sheets' => 50,
+        ]);
+
+        $connectRes = $this->postJson('/api/v1/kiosks/connect', [
+            'machine_code' => $kiosk->machine_code,
+        ]);
+        $sessionToken = $connectRes->json('data.session_token');
+
+        // 1. Calculate price with 2 copies, color, single_sided for 5 pages (10 sheets total)
+        $calcRes = $this->postJson('/api/v1/files/calculate-price', [
+            'service_type' => 'self_printing',
+            'session_token' => $sessionToken,
+            'detected_page_count' => 5,
+            'copies_count' => 2,
+            'paper_size' => 'A4',
+            'color_mode' => 'color',
+            'side_mode' => 'single_sided',
+        ]);
+
+        $calcRes->assertOk();
+        $calcRes->assertJsonPath('data.copies_count', 2);
+        $calcRes->assertJsonPath('data.total_sheets_needed', 10);
+        $calcRes->assertJsonPath('data.color_mode', 'color');
+        $calcRes->assertJsonPath('data.kiosk_screen_updated', true);
+
+        // 2. Verify KioskSession in database was updated
+        $session = KioskSession::where('session_token', $sessionToken)->first();
+        $this->assertEquals(2, $session->copies_count);
+        $this->assertEquals(10, $session->total_sheets);
+        $this->assertEquals('color', $session->color_mode);
+        $this->assertEquals('single_sided', $session->side_mode);
+        $this->assertEquals('file_uploaded', $session->status);
+
+        // 3. Verify screen status polling reflects updated copies and color
+        $pollRes = $this->getJson(route('api.kiosk.screen.status', $kiosk->machine_code));
+        $pollRes->assertOk();
+        $this->assertEquals(2, $pollRes->json('session.copies_count'));
+        $this->assertEquals(10, $pollRes->json('session.total_sheets'));
+        $this->assertEquals('color', $pollRes->json('session.color_mode'));
+
+        // 4. Test exceeding max_sheets_per_job (e.g. 10 copies of 5 pages = 50 sheets > 20 max)
+        $excessiveRes = $this->postJson('/api/v1/files/calculate-price', [
+            'service_type' => 'self_printing',
+            'session_token' => $sessionToken,
+            'detected_page_count' => 5,
+            'copies_count' => 10,
+            'paper_size' => 'A4',
+            'color_mode' => 'color',
+            'side_mode' => 'single_sided',
+        ]);
+        $excessiveRes->assertStatus(422);
+        $this->assertStringContainsString('الحد الأقصى المسموح به للطباعة الفورية', $excessiveRes->json('message'));
+    }
 }

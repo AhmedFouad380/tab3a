@@ -436,11 +436,47 @@
         /* Info Grid for Uploaded Document */
         .doc-info-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 16px;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
             width: 100%;
-            max-width: 680px;
+            max-width: 780px;
             margin: 16px 0 24px;
+        }
+
+        .payment-order-summary-box {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            align-items: center;
+            margin: 12px 0 18px;
+            max-width: 680px;
+        }
+
+        .summary-pill {
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            border-radius: 9999px;
+            padding: 6px 16px;
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: #334155;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .summary-pill i {
+            color: var(--primary-blue);
+        }
+
+        .summary-pill.pill-color {
+            background: #fef2f2;
+            border-color: #fecaca;
+            color: #b91c1c;
+        }
+        .summary-pill.pill-color i {
+            color: #ef4444;
         }
 
         .doc-info-card {
@@ -827,6 +863,10 @@
                         <div class="doc-info-value num-font" id="info-pages">0</div>
                     </div>
                     <div class="doc-info-card">
+                        <div class="doc-info-label">عدد النسخ</div>
+                        <div class="doc-info-value num-font" id="info-copies">1</div>
+                    </div>
+                    <div class="doc-info-card">
                         <div class="doc-info-label">إجمالي الأوراق (A4)</div>
                         <div class="doc-info-value num-font" id="info-sheets">0</div>
                     </div>
@@ -847,9 +887,28 @@
                     <i class="fa-solid fa-credit-card"></i>
                 </div>
                 <h2 class="state-title" style="color: #d97706;">برجاء إتمام الدفع عبر الجوال</h2>
-                <p class="state-subtitle">
+                <p class="state-subtitle" style="margin-bottom: 8px;">
                     إجمالي المبلغ المطلوب: <strong id="pay-total-amount" class="num-font" style="color: #005bb5; font-size: 1.4rem;">0.00 ر.س</strong>
                 </p>
+
+                <div class="payment-order-summary-box">
+                    <div class="summary-pill">
+                        <i class="fa-solid fa-copy"></i>
+                        <span>النسخ: <strong id="pay-copies" class="num-font">1</strong></span>
+                    </div>
+                    <div class="summary-pill">
+                        <i class="fa-solid fa-file-lines"></i>
+                        <span>الصفحات: <strong id="pay-pages" class="num-font">1</strong></span>
+                    </div>
+                    <div class="summary-pill">
+                        <i class="fa-solid fa-layer-group"></i>
+                        <span>الأوراق: <strong id="pay-sheets" class="num-font">1</strong></span>
+                    </div>
+                    <div class="summary-pill" id="pay-mode-pill">
+                        <i class="fa-solid fa-palette"></i>
+                        <span id="pay-mode">أبيض وأسود</span>
+                    </div>
+                </div>
                 <div style="display: flex; gap: 16px; font-size: 26px; color: #475569; margin: 10px 0;">
                     <span><i class="fa-brands fa-apple-pay"></i></span>
                     <span><i class="fa-solid fa-credit-card"></i> مدى</span>
@@ -881,8 +940,8 @@
                 </div>
             </div>
 
-            <!-- Hidden Iframe for Direct Silent Hardware Printing -->
-            <iframe id="kiosk-print-frame" style="position: fixed; right: 0; bottom: 0; width: 0; height: 0; border: 0; opacity: 0; pointer-events: none;"></iframe>
+            <!-- Hidden Off-screen Iframe for Direct Hardware Printing -->
+            <iframe id="kiosk-print-frame" style="position: fixed; left: -9999px; top: -9999px; width: 1200px; height: 1200px; border: 0; visibility: hidden;"></iframe>
 
             <!-- ================= Stage 6: Completed ================= -->
             <div class="center-state" id="view-completed" style="display: none;">
@@ -968,6 +1027,9 @@
             </div>
         </div>
     </div>
+
+    <!-- PDF Manipulation Library for dynamic multi-copy print jobs -->
+    <script src="{{ asset('js/pdf-lib.min.js') }}"></script>
 
     <!-- Interactive Script Logic -->
     <script>
@@ -1101,7 +1163,7 @@
                     const fileUrl = (data && data.session) ? data.session.file_url : null;
                     const colorMode = (data && data.session) ? data.session.color_mode : 'black_and_white';
                     const copies = (data && data.session && data.session.copies_count) ? parseInt(data.session.copies_count) : 1;
-                    startPrintSimulation(data && data.session ? data.session.token : currentSessionToken);
+                    startPrintSimulation(data && data.session ? data.session.token : currentSessionToken, copies);
                     triggerBrowserPrint(fileUrl, colorMode, copies);
                 } else if (status === 'completed') {
                     document.getElementById('view-completed').style.display = 'flex';
@@ -1115,22 +1177,48 @@
             }
 
             if (status === 'waiting_scan' && data && data.qr_svg) {
-                document.getElementById('qr-container').innerHTML = data.qr_svg;
+                const qrContainer = document.getElementById('qr-container');
+                if (qrContainer) qrContainer.innerHTML = data.qr_svg;
             } else if (status === 'file_uploaded' && data && data.session) {
-                document.getElementById('display-filename').innerText = data.session.file_name || 'document.pdf';
-                document.getElementById('info-pages').innerText = data.session.detected_page_count || 1;
-                document.getElementById('info-sheets').innerText = data.session.total_sheets || 1;
-                document.getElementById('info-mode').innerText = (data.session.color_mode === 'color' ? 'ملون' : 'أبيض وأسود') + 
-                    (data.session.side_mode === 'double_sided' ? ' (وجهين)' : ' (وجه واحد)');
-                document.getElementById('display-price').innerText = Number(data.session.total_price).toFixed(2) + ' ر.س';
+                const sess = data.session;
+                const filenameEl = document.getElementById('display-filename');
+                const pagesEl = document.getElementById('info-pages');
+                const copiesEl = document.getElementById('info-copies');
+                const sheetsEl = document.getElementById('info-sheets');
+                const modeEl = document.getElementById('info-mode');
+                const priceEl = document.getElementById('display-price');
+
+                if (filenameEl) filenameEl.innerText = sess.file_name || 'document.pdf';
+                if (pagesEl) pagesEl.innerText = sess.detected_page_count || 1;
+                if (copiesEl) copiesEl.innerText = sess.copies_count || 1;
+                if (sheetsEl) sheetsEl.innerText = sess.total_sheets || 1;
+                if (modeEl) {
+                    modeEl.innerText = (sess.color_mode === 'color' ? 'ملون' : 'أبيض وأسود') + 
+                        (sess.side_mode === 'double_sided' ? ' (وجهين)' : ' (وجه واحد)');
+                }
+                if (priceEl) priceEl.innerText = Number(sess.total_price || 0).toFixed(2) + ' ر.س';
             } else if (status === 'awaiting_payment' && data && data.session) {
-                document.getElementById('pay-total-amount').innerText = Number(data.session.total_price).toFixed(2) + ' ر.س';
+                const sess = data.session;
+                const totalEl = document.getElementById('pay-total-amount');
+                const copiesEl = document.getElementById('pay-copies');
+                const pagesEl = document.getElementById('pay-pages');
+                const sheetsEl = document.getElementById('pay-sheets');
+                const modeEl = document.getElementById('pay-mode');
+
+                if (totalEl) totalEl.innerText = Number(sess.total_price || 0).toFixed(2) + ' ر.س';
+                if (copiesEl) copiesEl.innerText = sess.copies_count || 1;
+                if (pagesEl) pagesEl.innerText = sess.detected_page_count || 1;
+                if (sheetsEl) sheetsEl.innerText = sess.total_sheets || 1;
+                if (modeEl) {
+                    modeEl.innerText = (sess.color_mode === 'color' ? 'ملون' : 'أبيض وأسود') + 
+                        (sess.side_mode === 'double_sided' ? ' (وجهين)' : ' (وجه واحد)');
+                }
             }
         }
 
         let hasTriggeredPrintForToken = null;
 
-        function triggerBrowserPrint(fileUrl, colorMode, copies = 1) {
+        async function triggerBrowserPrint(fileUrl, colorMode, copies = 1) {
             if (!fileUrl) {
                 console.warn('Physical print: no file_url provided');
                 return;
@@ -1139,7 +1227,36 @@
             if (hasTriggeredPrintForToken === currentSessionToken) return;
             hasTriggeredPrintForToken = currentSessionToken;
 
-            console.log('Sending direct print command to kiosk printer for:', fileUrl, 'colorMode:', colorMode, 'copies:', copies);
+            const totalCopies = Math.max(1, parseInt(copies) || 1);
+            console.log('Sending direct print command to kiosk printer for:', fileUrl, 'colorMode:', colorMode, 'copies:', totalCopies);
+
+            let printUrl = fileUrl;
+            let isBlobUrl = false;
+            const isPdf = fileUrl.toLowerCase().split('?')[0].endsWith('.pdf');
+            const isImage = /\.(jpe?g|png|webp|gif)($|\?)/i.test(fileUrl);
+
+            // 1. For PDFs: If copies > 1, duplicate pages in the PDF document itself using PDFLib!
+            // This ensures 1 single reliable print job with ALL copies collated, bypassing Chrome's single-copy lock.
+            if (isPdf && totalCopies > 1 && window.PDFLib) {
+                try {
+                    const existingPdfBytes = await fetch(fileUrl).then(r => r.arrayBuffer());
+                    const originalDoc = await PDFLib.PDFDocument.load(existingPdfBytes);
+                    const mergedDoc = await PDFLib.PDFDocument.create();
+
+                    for (let c = 0; c < totalCopies; c++) {
+                        const copiedPages = await mergedDoc.copyPages(originalDoc, originalDoc.getPageIndices());
+                        copiedPages.forEach(page => mergedDoc.addPage(page));
+                    }
+
+                    const mergedBytes = await mergedDoc.save();
+                    const blob = new Blob([mergedBytes], { type: 'application/pdf' });
+                    printUrl = URL.createObjectURL(blob);
+                    isBlobUrl = true;
+                    console.log('Successfully generated multi-copy PDF binary with', totalCopies, 'copies');
+                } catch (err) {
+                    console.error('Failed to duplicate PDF pages via PDFLib, falling back to original URL:', err);
+                }
+            }
 
             let frame = document.getElementById('kiosk-print-frame');
             if (frame) {
@@ -1148,68 +1265,77 @@
 
             frame = document.createElement('iframe');
             frame.id = 'kiosk-print-frame';
+            // CRITICAL: Dimensions must be non-zero off-screen so Chrome renders PDF plugin and focuses correctly
             frame.style.position = 'fixed';
-            frame.style.right = '0';
-            frame.style.bottom = '0';
-            frame.style.width = '0';
-            frame.style.height = '0';
+            frame.style.left = '-9999px';
+            frame.style.top = '-9999px';
+            frame.style.width = '1200px';
+            frame.style.height = '1200px';
             frame.style.border = '0';
-            frame.style.opacity = '0';
-            frame.style.pointerEvents = 'none';
+            frame.style.visibility = 'hidden';
             document.body.appendChild(frame);
 
-            frame.src = fileUrl;
+            if (isImage) {
+                // If it's an image, create multi-page document inside iframe using clean DOM manipulation
+                const doc = frame.contentDocument || frame.contentWindow.document;
+                doc.open();
+                doc.close();
 
-            frame.onload = function() {
-                try {
-                    try {
-                        const frameDoc = frame.contentDocument || frame.contentWindow.document;
-                        if (frameDoc && colorMode === 'black_and_white') {
-                            const style = frameDoc.createElement('style');
-                            style.textContent = `
-                                @media print {
-                                    * {
-                                        filter: grayscale(100%) !important;
-                                        -webkit-filter: grayscale(100%) !important;
-                                    }
-                                    img, canvas, svg, body {
-                                        filter: grayscale(100%) contrast(110%) !important;
-                                        -webkit-filter: grayscale(100%) contrast(110%) !important;
-                                    }
-                                }
-                            `;
-                            frameDoc.head?.appendChild(style);
-                        }
-                    } catch (e) {
-                        // ignore iframe cross-origin restrictions
-                    }
+                const style = doc.createElement('style');
+                style.textContent = '@page { size: auto; margin: 0; } body { margin: 0; padding: 0; background: #fff; }';
+                doc.head.appendChild(style);
 
-                    setTimeout(() => {
-                        const totalCopies = Math.max(1, parseInt(copies) || 1);
-                        console.log('Triggering iframe window.print() for', totalCopies, 'copies');
-                        for (let c = 0; c < totalCopies; c++) {
-                            setTimeout(() => {
-                                frame.contentWindow.focus();
-                                frame.contentWindow.print();
-                            }, c * 1500);
-                        }
-                    }, 500);
-                } catch (e) {
-                    console.error('Error invoking silent frame print:', e);
+                for (let i = 0; i < totalCopies; i++) {
+                    const wrap = doc.createElement('div');
+                    wrap.style.cssText = 'page-break-after: always; width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; margin: 0; padding: 0;';
+                    const img = doc.createElement('img');
+                    img.src = fileUrl;
+                    img.style.cssText = 'max-width: 100%; max-height: 100%; object-fit: contain;' + (colorMode === 'black_and_white' ? 'filter: grayscale(100%); -webkit-filter: grayscale(100%);' : '');
+                    wrap.appendChild(img);
+                    doc.body.appendChild(wrap);
                 }
-            };
+
+                setTimeout(() => {
+                    try {
+                        frame.contentWindow.focus();
+                        frame.contentWindow.print();
+                    } catch (e) {
+                        console.error('Image frame print error:', e);
+                    }
+                }, 600);
+            } else {
+                // PDF Document (Single or Multi-Copy via PDFLib)
+                frame.src = printUrl;
+
+                frame.onload = function() {
+                    // Give Chrome PDF plugin 800ms to paint before triggering print
+                    setTimeout(() => {
+                        try {
+                            frame.contentWindow.focus();
+                            frame.contentWindow.print();
+                        } catch (e) {
+                            console.error('PDF frame print error:', e);
+                        }
+
+                        if (isBlobUrl) {
+                            setTimeout(() => URL.revokeObjectURL(printUrl), 10000);
+                        }
+                    }, 800);
+                };
+            }
         }
 
-        function startPrintSimulation(token) {
+        function startPrintSimulation(token, copies = 1) {
             clearInterval(printAnimationInterval);
             let percent = 0;
             const bar = document.getElementById('print-progress');
             const txt = document.getElementById('print-percent');
             const note = document.getElementById('print-status-note');
 
+            const totalCopies = Math.max(1, parseInt(copies) || 1);
             bar.style.width = '0%';
             txt.innerText = '0%';
-            note.innerText = '⚡ جاري استقبال أمر الطباعة وسحب الأوراق من الطابعة...';
+            note.innerText = '⚡ جاري استقبال أمر الطباعة (' + (totalCopies > 1 ? totalCopies + ' نسخ' : 'نسخة واحدة') + ') وسحب الأوراق من الطابعة...';
 
             printAnimationInterval = setInterval(() => {
                 percent += 5;

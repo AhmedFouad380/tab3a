@@ -242,6 +242,12 @@ class OrderController extends BaseApiController
             if ($session) {
                 $session->update([
                     'status' => $isAlrajhi ? 'awaiting_payment' : 'printing',
+                    'copies_count' => $copies,
+                    'color_mode' => $colorMode,
+                    'side_mode' => $sideMode,
+                    'paper_size' => $paperSize,
+                    'total_sheets' => $totalSheets,
+                    'total_price' => $totalAmount,
                     'print_file_path' => $printFilePath,
                     'order_id' => $order->id,
                     'completed_at' => $isAlrajhi ? null : now(),

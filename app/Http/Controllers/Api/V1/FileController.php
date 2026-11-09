@@ -249,20 +249,25 @@ class FileController extends BaseApiController
         if ($request->filled('session_token')) {
             $kioskSession = KioskSession::where('session_token', $request->session_token)->first();
             $kiosk = $kioskSession?->kiosk;
-        } elseif ($request->filled('kiosk_machine_id')) {
-            $kioskSession = KioskSession::where('kiosk_machine_id', $request->kiosk_machine_id)
-                ->whereIn('status', ['waiting_scan', 'connected', 'file_uploaded', 'awaiting_payment'])
-                ->latest()
-                ->first();
-            $kiosk = $kioskSession?->kiosk ?? KioskMachine::find($request->kiosk_machine_id);
+        }
+
+        if (! $kiosk && $request->filled('kiosk_machine_id')) {
+            $kiosk = KioskMachine::find($request->kiosk_machine_id);
+            if (! $kioskSession && $kiosk) {
+                $kioskSession = KioskSession::where('kiosk_machine_id', $kiosk->id)
+                    ->whereIn('status', ['waiting_scan', 'connected', 'file_uploaded', 'awaiting_payment'])
+                    ->latest()
+                    ->first();
+            }
         }
 
         if ($kiosk) {
+            // 1. Max sheets allowed for this kiosk machine
             $maxAllowedSheets = $kiosk->getEffectiveMaxSheets();
             if ($totalSheets > $maxAllowedSheets) {
                 return $this->error(
                     $this->getLocale() === 'en'
-                        ? "The order requires {$totalSheets} sheets, which exceeds the maximum allowed ({$maxAllowedSheets} sheets) for instant printing on this kiosk."
+                        ? "The order requires {$totalSheets} sheets ({$pagesToPrint} pages x {$copies} copies), which exceeds the maximum allowed ({$maxAllowedSheets} sheets) for instant printing on this kiosk."
                         : "يتجاوز عدد الأوراق المطلوب ({$totalSheets} ورقة) الحد الأقصى المسموح به للطباعة الفورية على هذه الماكينة ({$maxAllowedSheets} ورقة). فضلاً قلل عدد الصفحات أو النسخ أو استخدم خدمة الطلب المسبق.",
                     422,
                     [
@@ -274,12 +279,57 @@ class FileController extends BaseApiController
                 );
             }
 
+            // 2. Paper availability in tray
             $availableInTray = $paperSize === 'A3' ? $kiosk->paper_tray_a3_sheets : $kiosk->paper_tray_a4_sheets;
             if ($totalSheets > $availableInTray) {
                 return $this->error(
                     $this->getLocale() === 'en'
                         ? "The machine does not have enough {$paperSize} paper ({$availableInTray} sheets available, required: {$totalSheets})."
                         : "الماكينة لا تحتوي على ورق كافٍ حالياً في درج {$paperSize} ({$availableInTray} ورقة متاحة، والمطلوب {$totalSheets} ورقة).",
+                    422,
+                    [
+                        'available_in_tray' => $availableInTray,
+                        'total_sheets_needed' => $totalSheets,
+                    ]
+                );
+            }
+
+            // 3. Color support & toner checks
+            if ($colorMode === 'color') {
+                if (! $kiosk->supports_color) {
+                    return $this->error(
+                        $this->getLocale() === 'en'
+                            ? 'This kiosk machine only supports Black & White printing. Please switch to Black & White.'
+                            : 'ماكينة الطباعة المحددة تدعم الطباعة بالأبيض والأسود فقط. يرجى اختيار الطباعة بالأبيض والأسود.',
+                        422
+                    );
+                }
+
+                if ($kiosk->cyan_toner_level < 5 || $kiosk->magenta_toner_level < 5 || $kiosk->yellow_toner_level < 5) {
+                    return $this->error(
+                        $this->getLocale() === 'en'
+                            ? 'Color toner levels are too low on this machine. Please switch to Black & White or select another kiosk.'
+                            : 'مستوى الحبر الملون في الماكينة غير كافٍ للطباعة الملونة. يمكنك اختيار الطباعة بالأبيض والأسود لإتمام العملية.',
+                        422
+                    );
+                }
+            } else {
+                if ($kiosk->black_toner_level < 5) {
+                    return $this->error(
+                        $this->getLocale() === 'en'
+                            ? 'Black toner level is too low to print. Please select another kiosk.'
+                            : 'مستوى الحبر الأسود غير كافٍ لإتمام الطباعة. يرجى تجربة ماكينة أخرى.',
+                        422
+                    );
+                }
+            }
+
+            // 4. Duplex support
+            if ($sideMode === 'double_sided' && ! $kiosk->supports_duplex) {
+                return $this->error(
+                    $this->getLocale() === 'en'
+                        ? 'This kiosk machine does not support double-sided printing. Please choose single-sided.'
+                        : 'ماكينة الطباعة المحددة لا تدعم الطباعة على الوجهين. يرجى اختيار الطباعة على وجه واحد.',
                     422
                 );
             }
@@ -349,6 +399,9 @@ class FileController extends BaseApiController
             'copies_count' => $copies,
             'sheets_per_copy' => $sheetsPerCopy,
             'total_sheets_needed' => $totalSheets,
+            'color_mode' => $colorMode,
+            'side_mode' => $sideMode,
+            'paper_size' => $paperSize,
             'unit_price_per_page' => $unitPricePerPage,
             'print_subtotal' => round($printSubtotal, 2),
             'finishing_price' => round($finishingPrice, 2),
@@ -371,6 +424,7 @@ class FileController extends BaseApiController
             ] : null,
             'kiosk_session_token' => $kioskSession?->session_token,
             'kiosk_screen_status' => $kioskSession?->status,
+            'kiosk_screen_updated' => $kioskSession !== null,
         ]);
     }
 }
