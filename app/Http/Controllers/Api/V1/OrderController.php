@@ -14,6 +14,7 @@ use App\Models\OrderItem;
 use App\Models\OrderStatusHistory;
 use App\Models\Payment;
 use App\Models\PricingRule;
+use App\Models\SystemSetting;
 use App\Models\WalletTransaction;
 use App\Services\Print\DocumentPrintPreparationService;
 use Illuminate\Http\JsonResponse;
@@ -352,6 +353,23 @@ class OrderController extends BaseApiController
         $sheetsPerCopy = $sideMode === 'double_sided' ? (int) ceil($pagesToPrint / 2) : $pagesToPrint;
         $totalSheets = $sheetsPerCopy * $copies;
 
+        // 1. Max sheets allowed for pre-orders
+        $maxPreOrderSheets = (int) SystemSetting::getSetting('pre_order_max_sheets', 'ar', 500);
+        if ($maxPreOrderSheets > 0 && $totalSheets > $maxPreOrderSheets) {
+            return $this->error(
+                $this->getLocale() === 'en'
+                    ? "The order requires {$totalSheets} sheets ({$pagesToPrint} pages x {$copies} copies), which exceeds the maximum allowed ({$maxPreOrderSheets} sheets) for pre-orders."
+                    : "يتجاوز عدد الأوراق المطلوب ({$totalSheets} ورقة) الحد الأقصى المسموح به للطباعة المسبقة ({$maxPreOrderSheets} ورقة). فضلاً قلل عدد الصفحات أو النسخ.",
+                422,
+                [
+                    'pages_to_print' => $pagesToPrint,
+                    'copies' => $copies,
+                    'total_sheets_needed' => $totalSheets,
+                    'max_allowed_sheets' => $maxPreOrderSheets,
+                ]
+            );
+        }
+
         $rule = PricingRule::where('paper_size', $paperSize)
             ->where('color_mode', $colorMode)
             ->where('side_mode', $sideMode)
@@ -372,6 +390,13 @@ class OrderController extends BaseApiController
         }
 
         $subtotal = $printSubtotal + $finishingPrice;
+
+        // 2. Minimum order price for pre-orders
+        $minPreOrderPrice = (float) SystemSetting::getSetting('pre_order_min_order_price', 'ar', 5.00);
+        if ($subtotal < $minPreOrderPrice) {
+            $subtotal = $minPreOrderPrice;
+        }
+
         $taxAmount = round($subtotal * 0.15, 2);
         $totalAmount = round($subtotal + $taxAmount, 2);
 

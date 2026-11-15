@@ -167,6 +167,25 @@ class FileController extends BaseApiController
                     422
                 );
             }
+        } else {
+            // Validate pre-order max sheets if copies provided
+            $maxPreOrderSheets = (int) SystemSetting::getSetting('pre_order_max_sheets', 'ar', 500);
+            if ($maxPreOrderSheets > 0 && $totalSheets > $maxPreOrderSheets) {
+                @unlink($fullPath);
+
+                return $this->error(
+                    $this->getLocale() === 'en'
+                        ? "The uploaded file requires {$totalSheets} sheets ({$detectedPageCount} pages x {$copies} copies), which exceeds the maximum allowed ({$maxPreOrderSheets} sheets) for pre-orders."
+                        : "يتجاوز عدد الأوراق المطلوب ({$totalSheets} ورقة) الحد الأقصى المسموح به للطباعة المسبقة ({$maxPreOrderSheets} ورقة). فضلاً قلل عدد الصفحات أو النسخ.",
+                    422,
+                    [
+                        'detected_page_count' => $detectedPageCount,
+                        'copies' => $copies,
+                        'total_sheets_needed' => $totalSheets,
+                        'max_allowed_sheets' => $maxPreOrderSheets,
+                    ]
+                );
+            }
         }
 
         if ($kioskSession) {
@@ -333,6 +352,23 @@ class FileController extends BaseApiController
                     422
                 );
             }
+        } else {
+            // Pre-order validation: Max sheets allowed for pre-orders
+            $maxPreOrderSheets = (int) SystemSetting::getSetting('pre_order_max_sheets', 'ar', 500);
+            if ($maxPreOrderSheets > 0 && $totalSheets > $maxPreOrderSheets) {
+                return $this->error(
+                    $this->getLocale() === 'en'
+                        ? "The order requires {$totalSheets} sheets ({$pagesToPrint} pages x {$copies} copies), which exceeds the maximum allowed ({$maxPreOrderSheets} sheets) for pre-orders."
+                        : "يتجاوز عدد الأوراق المطلوب ({$totalSheets} ورقة) الحد الأقصى المسموح به للطباعة المسبقة ({$maxPreOrderSheets} ورقة). فضلاً قلل عدد الصفحات أو النسخ.",
+                    422,
+                    [
+                        'pages_to_print' => $pagesToPrint,
+                        'copies' => $copies,
+                        'total_sheets_needed' => $totalSheets,
+                        'max_allowed_sheets' => $maxPreOrderSheets,
+                    ]
+                );
+            }
         }
 
         // Find pricing rule matching service_type
@@ -365,11 +401,16 @@ class FileController extends BaseApiController
 
         $subtotal = $printSubtotal + $finishingPrice;
 
-        // Apply minimum order price for kiosk / self-printing
+        // Apply minimum order price
         if ($kiosk) {
             $minPrice = $kiosk->getEffectiveMinOrderPrice();
             if ($subtotal < $minPrice) {
                 $subtotal = $minPrice;
+            }
+        } else {
+            $minPreOrderPrice = (float) SystemSetting::getSetting('pre_order_min_order_price', 'ar', 5.00);
+            if ($subtotal < $minPreOrderPrice) {
+                $subtotal = $minPreOrderPrice;
             }
         }
 

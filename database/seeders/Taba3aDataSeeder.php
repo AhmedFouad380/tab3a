@@ -61,6 +61,22 @@ class Taba3aDataSeeder extends Seeder
                 'value' => ['ar' => '+966500000000', 'en' => '+966500000000'],
             ]
         );
+        SystemSetting::updateOrCreate(
+            ['key' => 'pre_order_max_sheets'],
+            [
+                'group' => 'print_settings',
+                'display_name' => ['ar' => 'الحد الأقصى لعدد الأوراق للطباعة المسبقة', 'en' => 'Max Sheets for Pre-Order'],
+                'value' => ['ar' => '500', 'en' => '500'],
+            ]
+        );
+        SystemSetting::updateOrCreate(
+            ['key' => 'pre_order_min_order_price'],
+            [
+                'group' => 'pricing',
+                'display_name' => ['ar' => 'الحد الأدنى لقيمة طلب الطباعة المسبقة (ر.س)', 'en' => 'Minimum Pre-Order Price (SAR)'],
+                'value' => ['ar' => '5.00', 'en' => '5.00'],
+            ]
+        );
 
         // 2. Branches
         $branch1 = Branch::create([
