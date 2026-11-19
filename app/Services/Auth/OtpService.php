@@ -7,6 +7,11 @@ use App\Services\Sms\FourJawalyService;
 
 class OtpService
 {
+    /**
+     * Temporary fixed OTP code used until random codes are enabled.
+     */
+    public const FIXED_OTP_CODE = '1234';
+
     public function __construct(public FourJawalyService $smsService) {}
 
     /**
@@ -16,7 +21,7 @@ class OtpService
      */
     public function issue(string $phone, string $countryCode, string $purpose, string $locale = 'ar', int $expiresInMinutes = 5): ?string
     {
-        $otpCode = config('app.debug') ? '1234' : (string) random_int(1000, 9999);
+        $otpCode = self::FIXED_OTP_CODE;
 
         if ($this->smsService->isEnabled()) {
             $isSent = $this->smsService->send($phone, $this->buildMessage($otpCode, $locale), $countryCode);
