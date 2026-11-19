@@ -61,6 +61,6 @@ Route::view('/privacy-policy', 'privacy')->name('privacy.policy');
 
 Route::get('/delete-account', [AccountDeletionController::class, 'show'])->name('account.delete');
 Route::get('/delete_account', fn () => redirect()->route('account.delete'));
-Route::post('/delete-account/send-otp', [AccountDeletionController::class, 'sendOtp'])->name('account.delete.send-otp');
+Route::post('/delete-account/send-otp', [AccountDeletionController::class, 'sendOtp'])->middleware('throttle:otp')->name('account.delete.send-otp');
 Route::post('/delete-account/confirm', [AccountDeletionController::class, 'confirmDelete'])->name('account.delete.confirm');
 Route::post('/delete-account/request', [AccountDeletionController::class, 'submitRequest'])->name('account.delete.request');

@@ -13,11 +13,14 @@ use App\Http\Requests\Api\V1\VerifyOtpRequest;
 use App\Http\Resources\Api\V1\UserResource;
 use App\Models\OtpVerification;
 use App\Models\User;
+use App\Services\Auth\OtpService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class AuthController extends BaseApiController
 {
+    public function __construct(protected OtpService $otpService) {}
+
     /**
      * Register a new user and send OTP
      */
@@ -58,15 +61,11 @@ class AuthController extends BaseApiController
             ]);
         }
 
-        $otpCode = '1234'; // Default for test mode or SMS provider
-        OtpVerification::create([
-            'phone_country_code' => $countryCode,
-            'phone' => $phone,
-            'otp_code' => $otpCode,
-            'purpose' => 'register',
-            'expires_at' => now()->addMinutes(5),
-            'is_used' => false,
-        ]);
+        $otpCode = $this->otpService->issue($phone, $countryCode, 'register', $this->getLocale());
+
+        if ($otpCode === null) {
+            return $this->otpDeliveryFailedResponse();
+        }
 
         $message = $this->getLocale() === 'en'
             ? 'Verification code sent successfully'
@@ -151,16 +150,11 @@ class AuthController extends BaseApiController
         }
 
         $countryCode = $request->phone_country_code ?? $user->phone_country_code ?? '+966';
-        $otpCode = '1234';
+        $otpCode = $this->otpService->issue($phone, $countryCode, 'login', $this->getLocale());
 
-        OtpVerification::create([
-            'phone_country_code' => $countryCode,
-            'phone' => $phone,
-            'otp_code' => $otpCode,
-            'purpose' => 'login',
-            'expires_at' => now()->addMinutes(5),
-            'is_used' => false,
-        ]);
+        if ($otpCode === null) {
+            return $this->otpDeliveryFailedResponse();
+        }
 
         $message = $this->getLocale() === 'en'
             ? 'Verification code sent successfully'
@@ -246,15 +240,11 @@ class AuthController extends BaseApiController
             }
         }
 
-        $otpCode = '1234';
-        OtpVerification::create([
-            'phone_country_code' => $countryCode,
-            'phone' => $phone,
-            'otp_code' => $otpCode,
-            'purpose' => $type,
-            'expires_at' => now()->addMinutes(5),
-            'is_used' => false,
-        ]);
+        $otpCode = $this->otpService->issue($phone, $countryCode, $type, $this->getLocale());
+
+        if ($otpCode === null) {
+            return $this->otpDeliveryFailedResponse();
+        }
 
         $message = $this->getLocale() === 'en'
             ? 'Verification code sent successfully'
@@ -274,16 +264,11 @@ class AuthController extends BaseApiController
     {
         $phone = $request->phone;
         $countryCode = $request->phone_country_code ?? '+966';
-        $otpCode = '1234';
+        $otpCode = $this->otpService->issue($phone, $countryCode, 'login', $this->getLocale());
 
-        OtpVerification::create([
-            'phone_country_code' => $countryCode,
-            'phone' => $phone,
-            'otp_code' => $otpCode,
-            'purpose' => 'login',
-            'expires_at' => now()->addMinutes(5),
-            'is_used' => false,
-        ]);
+        if ($otpCode === null) {
+            return $this->otpDeliveryFailedResponse();
+        }
 
         $message = $this->getLocale() === 'en'
             ? 'Verification code sent successfully'
@@ -440,5 +425,17 @@ class AuthController extends BaseApiController
         $message = $this->getLocale() === 'en' ? 'Logged out successfully' : 'تم تسجيل الخروج بنجاح';
 
         return $this->success(null, $message);
+    }
+
+    /**
+     * Response returned when the SMS provider fails to deliver the OTP.
+     */
+    protected function otpDeliveryFailedResponse(): JsonResponse
+    {
+        $errMsg = $this->getLocale() === 'en'
+            ? 'Unable to send the verification code right now, please try again later'
+            : 'تعذر إرسال رمز التحقق حالياً، يرجى المحاولة لاحقاً';
+
+        return $this->error($errMsg, 503);
     }
 }

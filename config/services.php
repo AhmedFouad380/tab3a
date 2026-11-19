@@ -44,4 +44,12 @@ return [
         'mode' => env('ALRAJHI_MODE', 'sandbox'),
     ],
 
+    'fourjawaly' => [
+        'enabled' => env('FOURJAWALY_ENABLED', false),
+        'base_url' => env('FOURJAWALY_BASE_URL', 'https://api-sms.4jawaly.com/api/v1'),
+        'api_key' => env('FOURJAWALY_API_KEY'),
+        'api_secret' => env('FOURJAWALY_API_SECRET'),
+        'sender' => env('FOURJAWALY_SENDER'),
+    ],
+
 ];

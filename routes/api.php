@@ -22,12 +22,12 @@ Route::prefix('v1')->group(function () {
 
     // 1. Authentication & Onboarding (Public)
     Route::prefix('auth')->group(function () {
-        Route::post('/register', [AuthController::class, 'register']);
+        Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:otp');
         Route::post('/verify-register-otp', [AuthController::class, 'verifyRegisterOtp']);
-        Route::post('/login', [AuthController::class, 'login']);
+        Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:otp');
         Route::post('/verify-login-otp', [AuthController::class, 'verifyLoginOtp']);
-        Route::post('/resend-otp', [AuthController::class, 'resendOtp']);
-        Route::post('/send-otp', [AuthController::class, 'sendOtp']);
+        Route::post('/resend-otp', [AuthController::class, 'resendOtp'])->middleware('throttle:otp');
+        Route::post('/send-otp', [AuthController::class, 'sendOtp'])->middleware('throttle:otp');
         Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
     });
 

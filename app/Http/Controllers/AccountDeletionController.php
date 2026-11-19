@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ContactMessage;
 use App\Models\OtpVerification;
 use App\Models\User;
+use App\Services\Auth\OtpService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -22,7 +23,7 @@ class AccountDeletionController extends Controller
     /**
      * Request OTP for account deletion.
      */
-    public function sendOtp(Request $request): JsonResponse
+    public function sendOtp(Request $request, OtpService $otpService): JsonResponse
     {
         $request->validate([
             'phone' => ['required', 'string', 'max:20'],
@@ -41,23 +42,15 @@ class AccountDeletionController extends Controller
             ], 404);
         }
 
-        // Generate 4-digit OTP code
-        $otpCode = config('app.debug') ? '1234' : (string) random_int(1000, 9999);
-        $countryCode = $user->phone_country_code ?? '+966';
+        $otpCode = $otpService->issue($user->phone, $user->phone_country_code ?? '+966', 'login', 'ar', 10);
 
-        // Invalidate previous unused OTPs
-        OtpVerification::where('phone', $user->phone)
-            ->where('is_used', false)
-            ->update(['is_used' => true]);
-
-        OtpVerification::create([
-            'phone_country_code' => $countryCode,
-            'phone' => $user->phone,
-            'otp_code' => $otpCode,
-            'purpose' => 'login',
-            'expires_at' => now()->addMinutes(10),
-            'is_used' => false,
-        ]);
+        if ($otpCode === null) {
+            return response()->json([
+                'success' => false,
+                'message' => 'تعذر إرسال رمز التحقق حالياً، يرجى المحاولة لاحقاً.',
+                'message_en' => 'Unable to send the verification code right now, please try again later.',
+            ], 503);
+        }
 
         return response()->json([
             'success' => true,
